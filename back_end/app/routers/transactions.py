@@ -42,6 +42,7 @@ def create_new_transaction(
         transaction_date=transaction_data.transaction_date,
         category_id=transaction_data.category_id,
         description=transaction_data.description,
+        type = transaction_data.type,
     )
 
 

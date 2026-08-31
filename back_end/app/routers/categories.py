@@ -6,6 +6,7 @@ from app.core.deps import get_current_user
 from app.crud.categories import (
     create_category,
     get_category,
+    get_categories,
     delete_category,
 )
 from app.models import User
@@ -22,7 +23,7 @@ def get_all_categories(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return get_category(
+    return get_categories(
         db=db,
         user_id=current_user.id,
     )

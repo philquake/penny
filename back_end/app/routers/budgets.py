@@ -52,17 +52,22 @@ def get_budget_alert_status(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = compute_budget_status(
+    budget = get_budget(
         db=db,
         budget_id=budget_id,
         user_id=current_user.id,
     )
 
-    if not result:
+    if not budget:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Budget not found",
         )
+
+    result = compute_budget_status(
+        db=db,
+        budget=budget,
+    )
 
     return result
 
