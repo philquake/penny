@@ -1,0 +1,205 @@
+config.py       → application configuration
+database.py     → database infrastructure
+models/         → database tables
+routers/        → API endpoints
+services/       → business logic
+
+app/
+  models.py       # all SQLAlchemy models
+  schemas.py       # all Pydantic schemas
+  crud/
+    auth.py
+    categories.py
+    transactions.py
+    budgets.py
+  routers/
+    auth.py
+    categories.py
+    transactions.py
+    budgets.py
+
+                 Penny
+                   │
+       ┌───────────┴───────────┐
+       ▼                       ▼
+   REST API                 FastMCP
+       │                       │
+       ▼                       ▼
+ Pydantic schemas       Pydantic schemas
+       │                       │
+       └───────────┬───────────┘
+                   ▼
+             CRUD / Service
+                   │
+                   ▼
+               SQLAlchemy
+                   │
+                   ▼
+               Database
+
+               ORM Model
+"What does the database store?"
+
+Pydantic Create
+"What may the caller send?"
+
+Pydantic Update
+"What may the caller change?"
+
+Pydantic Out
+"What may Penny return?"
+
+Computed schema
+"What information can Penny calculate?"
+
+
+
+Plain password
+      ↓
+hash_password()
+      ↓
+Password hash
+
+
+Password + hash
+      ↓
+verify_password()
+      ↓
+True / False
+
+
+User ID
+      ↓
+create_access_token()
+      ↓
+JWT
+
+
+JWT
+      ↓
+decode_access_token()
+      ↓
+User ID / None
+
+CryptContext
+    ↓
+password hashing
+
+jwt
+    ↓
+JWT creation/decoding
+
+settings
+    ↓
+secret key / algorithm / expiration
+
+
+
+User logs in
+     ↓
+email + password
+     ↓
+verify password
+     ↓
+create JWT
+     ↓
+client stores token
+     ↓
+client sends token with future requests
+
+
+
+Step 2
+Configuration
+    │
+    ▼
+Step 3
+Database
+    │
+    ▼
+Step 4
+ORM Models
+    │
+    ▼
+Step 5
+Pydantic Schemas
+    │
+    └──────────────┐
+                   ▼
+Step 6         Security
+                   │
+                   ▼
+Step 7
+Authentication
+                   │
+                   ▼
+Step 8
+CRUD / Services
+                   │
+                   ▼
+Step 9
+Routers
+
+
+check out JWT audience later
+
+Your compute_budget_status() deserves more tests than something simple like delete_budget() because there's more that can go wrong.
+
+Think about edge cases:
+
+$0 spent
+$1 spent
+exactly budget
+over budget
+transaction before period
+transaction after period
+wrong category
+wrong user
+multiple transactions
+
+
+Layer	Responsibility
+Flutter	UI and user interaction
+FastAPI routers	HTTP/API interface
+Dependencies	Authentication, DB sessions
+Pydantic schemas	Input/output validation
+CRUD/services	Application/database operations
+SQLAlchemy models	Database representation
+Database	Persistent data
+FastMCP	AI interface
+Security	Passwords/JWT
+
+Layer	Responsibility
+main.py	Assemble application
+routers/	HTTP/API handling
+deps.py	Authentication & dependencies
+schemas/	Validate API input/output
+crud/	Database operations
+models/	Database structure
+database.py	Database connection/session
+security.py	Password hashing/JWT
+Database	Persist Penny's data
+
+HTTP request
+     ↓
+Router
+     ↓
+Validate with Pydantic
+     ↓
+get_current_user()
+     ↓
+current_user.id
+     ↓
+CRUD function
+     ↓
+Ownership filter
+     ↓
+SQLAlchemy
+     ↓
+Database
+     ↓
+CRUD result
+     ↓
+Pydantic response
+     ↓
+JSON response
