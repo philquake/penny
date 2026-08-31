@@ -90,8 +90,8 @@ class BudgetOut(BaseModel):
     
 class BudgetStatus(BaseModel):
     budget_id: int
-    budget_amount: Decimal
     spent_amount: Decimal
     remaining_amount: Decimal
     percentage_used: Decimal
     status: str
+    threshold_crossed: bool
