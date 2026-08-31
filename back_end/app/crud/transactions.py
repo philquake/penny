@@ -1,5 +1,5 @@
 from datetime import date
-
+from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -9,7 +9,7 @@ from app.models.transactions import Transaction, TransactionType
 def create_transaction(
     db: Session,
     user_id: int,
-    amount: float,
+    amount: Decimal,
     transaction_date: date,
     category_id: int,
     type: TransactionType,
@@ -80,7 +80,7 @@ def list_transactions(
 def update_transaction(
     db: Session,
     transaction: Transaction,
-    amount: float | None = None,
+    amount: Decimal | None = None,
     transaction_date: date | None = None,
     category_id: int | None = None,
     description: str | None = None,

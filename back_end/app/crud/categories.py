@@ -62,7 +62,7 @@ def get_category(
     category_id: int,
     user_id: int,
 ) -> Category | None:
-    
+    """Fetch a single category by id, scoped to the user (or global defaults)."""
     statement = (
         select(Category)
         .where(
@@ -75,6 +75,16 @@ def get_category(
     )
 
     return db.scalar(statement)
+
+def get_categories(
+    db: Session,
+    user_id: int,
+) -> list[Category]:
+    """Fetch all categories visible to the user: their own + global defaults."""
+    statement = select(Category).where(
+        (Category.user_id == user_id) | (Category.user_id.is_(None))
+    )
+    return list(db.scalars(statement).all())
 
 def delete_category(
     db: Session,

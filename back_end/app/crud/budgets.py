@@ -1,9 +1,10 @@
 from datetime import date
+from decimal import Decimal
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models.budgets import Budget
+from app.models.budgets import Budget, BudgetPeriod
 from app.models.transactions import Transaction
 
 
@@ -11,8 +12,8 @@ def create_budget(
     db: Session,
     user_id: int,
     category_id: int,
-    amount: float,
-    period,
+    amount: Decimal,
+    period: BudgetPeriod,
     period_start: date,
     period_end: date,
     alert_threshold_percent: int,
@@ -86,11 +87,32 @@ def compute_budget_status(
 
     remaining = budget.amount - spent
 
-    threshold_crossed = spent >= budget.amount
+    percentage_used = (
+        (spent / budget.amount) * Decimal("100")
+        if budget.amount > 0
+        else Decimal("0")
+    )
+
+    threshold_amount = (
+        budget.amount
+        * Decimal(budget.alert_threshold_percent)
+        / Decimal("100")
+    )
+    
+    threshold_crossed = spent >= threshold_amount
+    
+    if percentage_used >= Decimal("100"):
+        budget_status = "exceeded"
+    elif threshold_crossed:
+        budget_status = "alert"
+    else:
+        budget_status = "normal"
 
     return {
-        "budget_amount": budget.amount,
-        "spent": spent,
-        "remaining": remaining,
+        "budget_id": budget.id,
+        "spent_amount": spent,
+        "remaining_amount": remaining,
+        "percentage_used": percentage_used,
+        "status": budget_status,
         "threshold_crossed": threshold_crossed,
     }

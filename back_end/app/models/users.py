@@ -21,3 +21,4 @@ class User(Base):
         DateTime,
         default=datetime.now(tz=None),
     )
+    role: Mapped[str] = mapped_column(String(255), default="user")

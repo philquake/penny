@@ -59,7 +59,7 @@ class Transaction(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.now(tz=None),
+        default=lambda: datetime.now(tz=None),
         nullable=False,
     )
     
