@@ -8,17 +8,20 @@ from app.crud.categories import seed_default_categories
 
 from app.routers import transactions
 from app.routers import auth, budgets, categories
-from app.db.database import Base, SessionLocal, engine
+from app.db import database
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create database tables
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
+    database.Base.metadata.create_all(bind=database.engine)
+    db = database.SessionLocal()
     
     # Seed default categories
-    seed_default_categories(db)
+    try:
+        seed_default_categories(db)
+    finally:
+        db.close()
 
     yield
 
