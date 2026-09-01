@@ -2,19 +2,29 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
+from decimal import Decimal
 
 from app.main import app
 from app.db.database import Base, get_db
+from app.crud.categories import seed_default_categories
+from app.db import database
 
 TEST_DB = Path(__file__).parent / "test_smoke.db"
 if TEST_DB.exists():
     TEST_DB.unlink()
+
 
 test_engine = create_engine(
     f"sqlite:///{TEST_DB}",
     connect_args={"check_same_thread": False},
 )
 TestSessionLocal = sessionmaker(bind=test_engine, autocommit=False, autoflush=False)
+
+# Redirect the app's database module to the test engine
+database.engine = test_engine
+database.SessionLocal = TestSessionLocal
+
+from app.main import app  # import app AFTER the patch if lifespan reads database.* at call time — but since it's call-time now, import order doesn't matter as much
 
 def override_get_db():
     db = TestSessionLocal()
@@ -23,8 +33,8 @@ def override_get_db():
     finally:
         db.close()
 
-app.dependency_overrides[get_db] = override_get_db
-Base.metadata.create_all(bind=test_engine)
+app.dependency_overrides[database.get_db] = override_get_db
+
 
 
 def test_smoke_workflow():
@@ -51,7 +61,7 @@ def test_smoke_workflow():
         }
 
         response = client.post("/auth/signup", json=user)
-        print(response.status_code, response.json())
+        
         assert response.status_code == 201
         
         created_user = response.json()
@@ -126,6 +136,7 @@ def test_smoke_workflow():
             "transaction_date": "2026-08-29",
             "category_id": food_category["id"],
             "description": "Smoke test grocery purchase",
+            "type": "expense",
         }
 
         response = client.post(
@@ -138,7 +149,7 @@ def test_smoke_workflow():
 
         created_transaction = response.json()
 
-        assert created_transaction["amount"] == 50.00
+        assert created_transaction["amount"] == "50.00"
         assert created_transaction["category_id"] == food_category["id"]
 
         # List transactions
@@ -152,7 +163,7 @@ def test_smoke_workflow():
         transactions = response.json()
 
         assert len(transactions) == 1
-        assert transactions[0]["amount"] == 50.00
+        assert transactions[0]["amount"] == "50.00"
 
         # --------------------------------------------------
         # 6. Negative amount must be rejected
@@ -180,9 +191,10 @@ def test_smoke_workflow():
         budget = {
             "category_id": food_category["id"],
             "amount": 100.00,
-            "start_date": "2026-08-01",
-            "end_date": "2026-08-31",
-            "threshold": 50.00,
+            "period": "monthly",
+            "period_start": "2026-08-01",
+            "period_end": "2026-08-31",
+            "alert_threshold_percent": "50.00",
         }
 
         response = client.post(
@@ -210,9 +222,9 @@ def test_smoke_workflow():
         # The transaction created above was $50.
         # The budget threshold is 50%, so the threshold
         # should be flagged.
-        assert budget_status["spent"] == 50.00
-        assert budget_status["percentage_used"] == 50.00
-        assert budget_status["threshold_reached"] is True
+        assert Decimal(str(budget_status["spent_amount"])) == Decimal("50.00")
+        assert Decimal(str(budget_status["percentage_used"])) == Decimal("50.00")
+        assert budget_status["threshold_crossed"] is True
 
         # --------------------------------------------------
         # 8. Unauthenticated request -> 401
