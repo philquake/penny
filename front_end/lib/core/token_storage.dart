@@ -6,8 +6,8 @@ class TokenStorage {
   final FlutterSecureStorage _storage;
 
   const TokenStorage({
-    FlutterSecureStorage storage = const FlutterSecureStorage(),
-  }) : _storage = storage;
+    this._storage = const FlutterSecureStorage(),
+  });
 
   Future<void> saveToken(String token) async {
     await _storage.write(
