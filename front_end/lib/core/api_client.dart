@@ -26,7 +26,7 @@ class ApiClient {
     );
 
     dio.interceptors.add(
-      InterceptorsWrapper(
+      QueuedInterceptorsWrapper(
         onRequest: (options, handler) async {
           final token = await tokenStorage.getToken();
 
@@ -38,7 +38,8 @@ class ApiClient {
         },
 
         onError: (error, handler) async {
-          if (error.response?.statusCode == 401) {
+          final isAuthRequest = error.requestOptions.path.startsWith('/auth/');
+          if (error.response?.statusCode == 401 && !isAuthRequest) {
             await tokenStorage.deleteToken();
 
             if (onUnauthorized != null) {

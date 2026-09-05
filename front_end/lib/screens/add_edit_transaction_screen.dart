@@ -15,9 +15,9 @@ import '../widgets/transaction_row.dart' show categoryIcon;
 class AddEditTransactionScreen extends StatefulWidget {
   final List<Category> categories;
   final Transaction? existing;
-  final void Function(TransactionCreate) onCreate;
-  final void Function(int id, TransactionUpdate) onUpdate;
-  final void Function(int id)? onDelete;
+  final Future<void> Function(TransactionCreate) onCreate;
+  final Future<void> Function(int id, TransactionUpdate) onUpdate;
+  final Future<void> Function(int id)? onDelete;
 
   const AddEditTransactionScreen({
     super.key,
@@ -41,6 +41,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   late final TextEditingController _descriptionController;
   late DateTime _date;
   Category? _category;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -157,37 +158,57 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     );
   }
 
-  void _handleSave() {
-    if (!_canSave) return;
+  Future<void> _handleSave() async {
+    if (!_canSave || _isSaving) return;
     final amountString = _parsedAmount!.toStringAsFixed(2);
 
-    if (widget.isEditing) {
-      widget.onUpdate(
-        widget.existing!.id,
-        TransactionUpdate(
-          categoryId: _category!.id,
-          amount: amountString,
-          type: _type,
-          description: _descriptionController.text.trim().isEmpty
-              ? null
-              : _descriptionController.text.trim(),
-          transactionDate: _date,
-        ),
-      );
-    } else {
-      widget.onCreate(
-        TransactionCreate(
-          categoryId: _category!.id,
-          amount: amountString,
-          type: _type,
-          description: _descriptionController.text.trim().isEmpty
-              ? null
-              : _descriptionController.text.trim(),
-          transactionDate: _date,
+    setState(() => _isSaving = true);
+
+    try {
+      if (widget.isEditing) {
+        await widget.onUpdate(
+          widget.existing!.id,
+          TransactionUpdate(
+            categoryId: _category!.id,
+            amount: amountString,
+            type: _type,
+            description: _descriptionController.text.trim().isEmpty
+                ? null
+                : _descriptionController.text.trim(),
+            transactionDate: _date,
+          ),
+        );
+      } else {
+        await widget.onCreate(
+          TransactionCreate(
+            categoryId: _category!.id,
+            amount: amountString,
+            type: _type,
+            description: _descriptionController.text.trim().isEmpty
+                ? null
+                : _descriptionController.text.trim(),
+            transactionDate: _date,
+          ),
+        );
+      }
+      if (mounted) Navigator.of(context).pop();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      await showCupertinoDialog<void>(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Couldn\'t save transaction'),
+          content: Text(error.toString()),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
         ),
       );
     }
-    Navigator.of(context).pop();
   }
 
   Future<void> _handleDelete() async {
@@ -211,7 +232,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     );
 
     if (confirmed == true && widget.onDelete != null) {
-      widget.onDelete!(widget.existing!.id);
+      await widget.onDelete!(widget.existing!.id);
       if (mounted) Navigator.of(context).pop();
     }
   }
@@ -236,7 +257,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
         ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: _canSave ? _handleSave : null,
+          onPressed: _canSave && !_isSaving ? _handleSave : null,
           child: Text(
             'Save',
             style: TextStyle(
