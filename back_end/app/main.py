@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 
+from back_end.app.routers import reports
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -55,7 +56,7 @@ app.include_router(auth.router)
 app.include_router(categories.router)
 app.include_router(transactions.router)
 app.include_router(budgets.router)
-
+app.include_router(reports.router)
 
 # --------------------------------------------------
 # Health check

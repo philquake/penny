@@ -95,3 +95,18 @@ class BudgetStatus(BaseModel):
     percentage_used: Decimal
     status: str
     threshold_crossed: bool
+    
+class ReportSummary(BaseModel):
+    total_income: Decimal
+    total_expense: Decimal
+    net: Decimal
+
+class CategoryBreakdownItem(BaseModel):
+    category_id: int
+    category_name: str
+    total: Decimal
+
+class TrendBucket(BaseModel):
+    month: str  # "2026-08"
+    income: Decimal
+    expense: Decimal
