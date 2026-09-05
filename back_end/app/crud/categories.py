@@ -101,40 +101,23 @@ def delete_category(
     
 def seed_default_categories(db: Session) -> None:
     for name in DEFAULT_CATEGORIES:
-        statement = (
-            select(Category)
-            .where(
-                Category.name == name,
-                Category.user_id.is_(None),
-            )
+        category = db.scalar(
+            select(Category).where(Category.name == name, Category.user_id.is_(None))
         )
+        if category is None:
+            db.add(Category(name=name, user_id=None, type=TransactionType.EXPENSE, is_default=True))
+        else:
+            category.type = TransactionType.EXPENSE
+            category.is_default = True
 
-        existing = db.scalar(statement)
-        
-        if existing is None:
-            db.add(
-                Category(
-                    name=name,
-                    user_id=None,
-                    type=TransactionType.EXPENSE
-                )
-            )
     for name in DEFAULT_INCOME_CATEGORIES:
-        statement = (
-            select(Category)
-            .where(
-                Category.name == name,
-                Category.user_id.is_(None),
-            )
+        category = db.scalar(
+            select(Category).where(Category.name == name, Category.user_id.is_(None))
         )
-        existing = db.scalar(statement)
-        if existing is None:
-            db.add(
-                Category(
-                    name=name,
-                    user_id=None,
-                    type=TransactionType.INCOME,
-                    is_default=True,
-                )
-            )
+        if category is None:
+            db.add(Category(name=name, user_id=None, type=TransactionType.INCOME, is_default=True))
+        else:
+            category.type = TransactionType.INCOME
+            category.is_default = True
+
     db.commit()
