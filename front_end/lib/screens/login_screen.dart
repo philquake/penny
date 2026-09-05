@@ -8,7 +8,15 @@ import '../theme/app_theme.dart';
 /// household's own instance — most users never touch it, but it's real
 /// functionality this app needs, not decoration.
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  /// Returns an error message on failure, or null on success. The screen
+  /// doesn't navigate itself — the app root reacts to the session
+  /// provider's state changing and swaps to the authenticated shell.
+  final Future<String?> Function({
+    required String email,
+    required String password,
+  }) onSignIn;
+
+  const LoginScreen({super.key, required this.onSignIn});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -16,8 +24,16 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _serverController = TextEditingController(text: 'tailscale-host:8000');
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
+  // final _usernameController = TextEditingController();
+  // final _passwordController = TextEditingController();
+  final _usernameController = TextEditingController(
+  text: 'test@example.com',
+);
+
+final _passwordController = TextEditingController(
+  text: 'TestPassword123!',
+);
+  
 
   bool _showServerField = false;
   bool _obscurePassword = true;
@@ -43,11 +59,16 @@ class _LoginScreenState extends State<LoginScreen> {
       _isSubmitting = true;
     });
 
-    // TODO: wire to POST /auth/login against _serverController.text
-    await Future.delayed(const Duration(milliseconds: 900));
+    final error = await widget.onSignIn(
+      email: _usernameController.text.trim(),
+      password: _passwordController.text,
+    );
 
     if (!mounted) return;
-    setState(() => _isSubmitting = false);
+    setState(() {
+      _isSubmitting = false;
+      _errorText = error;
+    });
   }
 
   @override
@@ -270,9 +291,9 @@ class _ErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.rust.withValues(alpha: 0.08),
+        color: AppColors.rust.withValues(alpha:0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.rust.withValues(alpha: 0.25)),
+        border: Border.all(color: AppColors.rust.withValues(alpha:0.25)),
       ),
       child: Row(
         children: [

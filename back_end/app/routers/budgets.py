@@ -5,12 +5,14 @@ from app.db.database import get_db
 from app.core.deps import get_current_user
 from app.crud.budgets import (
     create_budget,
+    list_budgets,
     get_budget,
     compute_budget_status,
     delete_budget,
 )
 from app.models import User
 from app.schemas import BudgetCreate, BudgetOut, BudgetStatus
+
 
 router = APIRouter(
     prefix="/budgets",
@@ -19,7 +21,7 @@ router = APIRouter(
 
 
 @router.post(
-    "/",
+    "",
     response_model=BudgetOut,
     status_code=status.HTTP_201_CREATED,
 )
@@ -35,12 +37,12 @@ def create_new_budget(
     )
 
 
-@router.get("/", response_model=list[BudgetOut])
+@router.get("", response_model=list[BudgetOut])
 def get_all_budgets(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return get_budget(
+    return list_budgets(
         db=db,
         user_id=current_user.id,
     )
@@ -64,28 +66,34 @@ def get_budget_alert_status(
             detail="Budget not found",
         )
 
-    result = compute_budget_status(
+    return compute_budget_status(
         db=db,
         budget=budget,
     )
 
-    return result
 
-
-@router.delete("/{budget_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{budget_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 def remove_budget(
     budget_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    deleted = delete_budget(
+    budget = get_budget(
         db=db,
         budget_id=budget_id,
         user_id=current_user.id,
     )
 
-    if not deleted:
+    if not budget:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Budget not found",
         )
+
+    delete_budget(
+        db=db,
+        budget=budget,
+    )

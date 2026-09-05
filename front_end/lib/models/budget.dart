@@ -73,23 +73,6 @@ class Budget {
           json['alert_threshold_percent'] as int,
     );
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'user_id': userId,
-      'category_id': categoryId,
-      'amount': amount,
-      'period': period.value,
-      'period_start': _dateOnly(periodStart),
-      'period_end': _dateOnly(periodEnd),
-      'alert_threshold_percent': alertThresholdPercent,
-    };
-  }
-
-  static String _dateOnly(DateTime date) {
-    return date.toIso8601String().split('T').first;
-  }
 }
 
 class BudgetStatus {
@@ -118,17 +101,6 @@ class BudgetStatus {
       status: json['status'] as String,
       thresholdCrossed: json['threshold_crossed'] as bool,
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'budget_id': budgetId,
-      'spent_amount': spentAmount,
-      'remaining_amount': remainingAmount,
-      'percentage_used': percentageUsed,
-      'status': status,
-      'threshold_crossed': thresholdCrossed,
-    };
   }
 }
 

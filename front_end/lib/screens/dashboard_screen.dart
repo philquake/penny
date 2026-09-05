@@ -1,61 +1,76 @@
 import 'package:flutter/cupertino.dart';
+import '../models/budget_entry.dart';
 import '../models/category.dart';
-import '../models/transactions.dart';
 import '../models/transaction_type.dart';
+import '../models/transactions.dart';
 import '../theme/app_theme.dart';
 import '../widgets/transaction_row.dart';
 
 /// Dashboard / Home screen — the first thing a user sees after signing in.
 /// Ledger-style: a running balance up top, this month's flow beneath it,
 /// a quick budget snapshot, then the most recent lines in the book.
+///
+/// Takes real data from the caller rather than owning any of its own —
+/// totals, the "recent" slice, and category lookups are all derived here
+/// from the full lists, so there's one source of truth (the providers)
+/// instead of screen-local mock state.
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+  final List<Category> categories;
+  final List<Transaction> transactions;
+  final List<BudgetEntry> budgetEntries;
+  final VoidCallback onAddTransaction;
+  final VoidCallback onViewBudgets;
+  final VoidCallback onViewTransactions;
 
-  // Mock data — replace with providers reading from the FastAPI backend.
-  static const _totalBalance = 4820.16;
-  static const _monthIncome = 3200.00;
-  static const _monthExpenses = 1740.52;
+  const DashboardScreen({
+    super.key,
+    required this.categories,
+    required this.transactions,
+    required this.budgetEntries,
+    required this.onAddTransaction,
+    required this.onViewBudgets,
+    required this.onViewTransactions,
+  });
 
-  static final _budgets = [
-    _BudgetSnapshot('Groceries', spent: 340.12, limit: 500),
-    _BudgetSnapshot('Dining Out', spent: 210.40, limit: 150),
-    _BudgetSnapshot('Transport', spent: 88.00, limit: 200),
-  ];
+  double _amount(Transaction t) => double.tryParse(t.amount) ?? 0;
 
-  // Mock categories — replace with a provider reading GET /categories.
-  static const _categories = {
-    1: Category(id: 1, userId: 1, name: 'Groceries', type: TransactionType.expense, icon: 'bag', isDefault: true),
-    2: Category(id: 2, userId: 1, name: 'Income', type: TransactionType.income, icon: 'arrow_down_left', isDefault: true),
-    3: Category(id: 3, userId: 1, name: 'Subscriptions', type: TransactionType.expense, icon: 'repeat', isDefault: true),
-    4: Category(id: 4, userId: 1, name: 'Dining Out', type: TransactionType.expense, icon: 'house', isDefault: true),
-    5: Category(id: 5, userId: 1, name: 'Transport', type: TransactionType.expense, icon: 'car', isDefault: true),
-  };
+  double get _totalBalance => transactions.fold(0.0, (sum, t) {
+        final a = _amount(t);
+        return sum + (t.type == TransactionType.expense ? -a : a);
+      });
 
-  static final _recentTransactions = [
-    Transaction(
-        id: 1, userId: 1, categoryId: 1, amount: '64.28',
-        type: TransactionType.expense, description: 'Whole Foods',
-        transactionDate: DateTime(2026, 9, 2), createdAt: DateTime(2026, 9, 2)),
-    Transaction(
-        id: 2, userId: 1, categoryId: 2, amount: '1600.00',
-        type: TransactionType.income, description: 'Paycheck',
-        transactionDate: DateTime(2026, 9, 1), createdAt: DateTime(2026, 9, 1)),
-    Transaction(
-        id: 3, userId: 1, categoryId: 3, amount: '6.00',
-        type: TransactionType.expense, description: 'Tailscale',
-        transactionDate: DateTime(2026, 8, 31), createdAt: DateTime(2026, 8, 31)),
-    Transaction(
-        id: 4, userId: 1, categoryId: 4, amount: '28.75',
-        type: TransactionType.expense, description: 'Corner Diner',
-        transactionDate: DateTime(2026, 8, 30), createdAt: DateTime(2026, 8, 30)),
-    Transaction(
-        id: 5, userId: 1, categoryId: 5, amount: '41.10',
-        type: TransactionType.expense, description: 'Shell',
-        transactionDate: DateTime(2026, 8, 29), createdAt: DateTime(2026, 8, 29)),
-  ];
+  bool _isThisMonth(DateTime d, DateTime now) =>
+      d.year == now.year && d.month == now.month;
+
+  double get _monthIncome {
+    final now = DateTime.now();
+    return transactions
+        .where((t) => t.type == TransactionType.income && _isThisMonth(t.transactionDate, now))
+        .fold(0.0, (sum, t) => sum + _amount(t));
+  }
+
+  double get _monthExpenses {
+    final now = DateTime.now();
+    return transactions
+        .where((t) => t.type == TransactionType.expense && _isThisMonth(t.transactionDate, now))
+        .fold(0.0, (sum, t) => sum + _amount(t));
+  }
+
+  List<Transaction> get _recent {
+    final sorted = [...transactions]
+      ..sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
+    return sorted.take(5).toList();
+  }
+
+  Category? _categoryFor(int id) {
+    final match = categories.where((c) => c.id == id);
+    return match.isNotEmpty ? match.first : null;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final recent = _recent;
+
     return CupertinoPageScaffold(
       backgroundColor: AppColors.paper,
       child: CustomScrollView(
@@ -67,9 +82,7 @@ class DashboardScreen extends StatelessWidget {
             trailing: CupertinoButton(
               padding: EdgeInsets.zero,
               minimumSize: const Size(32, 32),
-              onPressed: () {
-                // TODO: navigate to Add Transaction screen
-              },
+              onPressed: onAddTransaction,
               child: const Icon(
                 CupertinoIcons.add_circled_solid,
                 color: AppColors.copper,
@@ -84,7 +97,7 @@ class DashboardScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _BalanceBlock(
-                    balance: _totalBalance.toString(),
+                    balance: _totalBalance,
                     income: _monthIncome,
                     expenses: _monthExpenses,
                   ),
@@ -92,44 +105,57 @@ class DashboardScreen extends StatelessWidget {
                   _SectionHeader(
                     title: 'Budgets this month',
                     actionLabel: 'View all',
-                    onAction: () {
-                      // TODO: navigate to Budgets screen
-                    },
+                    onAction: onViewBudgets,
                   ),
                   const SizedBox(height: 12),
-                  ..._budgets.map((b) => Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: _BudgetRow(budget: b),
-                      )),
+                  if (budgetEntries.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text('No budgets set yet', style: AppType.caption),
+                    )
+                  else
+                    ...budgetEntries.take(3).map((entry) => Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: _BudgetRow(entry: entry),
+                        )),
                   const SizedBox(height: 24),
                   _SectionHeader(
                     title: 'Recent',
                     actionLabel: 'View all',
-                    onAction: () {
-                      // TODO: navigate to Transactions List screen
-                    },
+                    onAction: onViewTransactions,
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: CupertinoColors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.hairline),
-                    ),
-                    child: Column(
-                      children: [
-                        for (int i = 0; i < _recentTransactions.length; i++) ...[
-                          TransactionRow(
-                            transaction: _recentTransactions[i],
-                            // categoryId: _categories[
-                            //     _recentTransactions[i].categoryId]!,
-                          ),
-                          if (i != _recentTransactions.length - 1)
-                            const LedgerDivider(indent: 56),
+                  if (recent.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: Text('No transactions yet', style: AppType.caption),
+                      ),
+                    )
+                  else
+                    Container(
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.hairline),
+                      ),
+                      child: Column(
+                        children: [
+                          for (int i = 0; i < recent.length; i++) ...[
+                            Builder(builder: (context) {
+                              final category = _categoryFor(recent[i].categoryId);
+                              if (category == null) return const SizedBox.shrink();
+                              return TransactionRow(
+                                transaction: recent[i],
+                                category: category,
+                              );
+                            }),
+                            if (i != recent.length - 1)
+                              const LedgerDivider(indent: 56),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -141,7 +167,7 @@ class DashboardScreen extends StatelessWidget {
 }
 
 class _BalanceBlock extends StatelessWidget {
-  final String balance;
+  final double balance;
   final double income;
   final double expenses;
 
@@ -159,7 +185,7 @@ class _BalanceBlock extends StatelessWidget {
         Text('Total balance', style: AppType.label),
         const SizedBox(height: 4),
         AmountText(
-          balance,
+          balance.toStringAsFixed(2),
           size: 40,
           weight: FontWeight.w600,
           colorBySign: false,
@@ -219,7 +245,8 @@ class _FlowStat extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        AmountText(value.toString(), size: 17, weight: FontWeight.w600, colorBySign: false),
+        AmountText(value.toStringAsFixed(2),
+            size: 17, weight: FontWeight.w600, colorBySign: false),
       ],
     );
   }
@@ -256,35 +283,31 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _BudgetSnapshot {
-  final String category;
-  final double spent;
-  final double limit;
-  const _BudgetSnapshot(this.category, {required this.spent, required this.limit});
-  double get fraction => (spent / limit).clamp(0, 1.4);
-  bool get isOver => spent > limit;
-}
-
 class _BudgetRow extends StatelessWidget {
-  final _BudgetSnapshot budget;
-  const _BudgetRow({required this.budget});
+  final BudgetEntry entry;
+  const _BudgetRow({required this.entry});
 
   @override
   Widget build(BuildContext context) {
-    final barColor = budget.isOver ? AppColors.rust : AppColors.copper;
+    final spent = double.tryParse(entry.status.spentAmount) ?? 0;
+    final limit = double.tryParse(entry.budget.amount) ?? 1;
+    final fraction = limit > 0 ? (spent / limit).clamp(0, 1.4) : 0.0;
+    final isOver = entry.status.status == 'exceeded';
+    final barColor = isOver ? AppColors.rust : AppColors.copper;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(budget.category, style: AppType.body.copyWith(fontSize: 14)),
+            Text(entry.category.name, style: AppType.body.copyWith(fontSize: 14)),
             Text(
-              '\$${budget.spent.toStringAsFixed(0)} of \$${budget.limit.toStringAsFixed(0)}',
+              '\$${spent.toStringAsFixed(0)} of \$${limit.toStringAsFixed(0)}',
               style: AppType.amount(
                 size: 13,
                 weight: FontWeight.w500,
-                color: budget.isOver ? AppColors.rust : AppColors.slate,
+                color: isOver ? AppColors.rust : AppColors.slate,
               ),
             ),
           ],
@@ -299,8 +322,7 @@ class _BudgetRow extends StatelessWidget {
                   Container(height: 5, color: AppColors.hairline),
                   Container(
                     height: 5,
-                    width: constraints.maxWidth *
-                        (budget.fraction > 1 ? 1 : budget.fraction),
+                    width: constraints.maxWidth * fraction,
                     color: barColor,
                   ),
                 ],

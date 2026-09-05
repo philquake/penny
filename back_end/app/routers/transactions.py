@@ -25,11 +25,7 @@ router = APIRouter(
 )
 
 
-@router.post(
-    "/",
-    response_model=TransactionOut,
-    status_code=status.HTTP_201_CREATED,
-)
+@router.post("",response_model=TransactionOut,status_code=status.HTTP_201_CREATED,)
 def create_new_transaction(
     transaction_data: TransactionCreate,
     db: Session = Depends(get_db),
@@ -46,7 +42,7 @@ def create_new_transaction(
     )
 
 
-@router.get("/", response_model=list[TransactionOut])
+@router.get("", response_model=list[TransactionOut])
 def get_all_transactions(
     category_id: int | None = None,
     start_date: date | None = None,

@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
+import '../models/category.dart';
 import '../models/transactions.dart';
+import '../models/transaction_type.dart';
 import '../theme/app_theme.dart';
 
 const _monthAbbr = [
@@ -7,35 +9,58 @@ const _monthAbbr = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-IconData categoryIcon(String category) {
-  switch (category) {
-    case 'Groceries':
+/// Maps a Category's icon key (e.g. 'bag', 'car') to a Cupertino glyph.
+/// Falls back to a generic circle for unrecognized/missing keys so a new
+/// category never breaks the UI.
+IconData categoryIcon(String? iconKey) {
+  switch (iconKey) {
+    case 'bag':
       return CupertinoIcons.bag;
-    case 'Income':
+    case 'arrow_down_left':
       return CupertinoIcons.arrow_down_left;
-    case 'Dining Out':
+    case 'house':
       return CupertinoIcons.house;
-    case 'Transport':
+    case 'car':
       return CupertinoIcons.car;
-    case 'Subscriptions':
+    case 'repeat':
       return CupertinoIcons.repeat;
     default:
       return CupertinoIcons.circle;
   }
 }
 
-/// A single ledger line: category glyph, merchant, category · date, amount.
-/// Used on the Dashboard's "Recent" list and the full Transactions List.
+/// A single ledger line: category glyph, description (or category name as
+/// fallback), category · date, amount.
+///
+/// Takes the resolved [Category] rather than looking it up itself — the
+/// caller (screen) owns the id -> Category map, keeping this widget a pure
+/// display component with no data-layer knowledge.
 class TransactionRow extends StatelessWidget {
   final Transaction transaction;
+  final Category category;
   final VoidCallback? onTap;
 
-  const TransactionRow({super.key, required this.transaction, this.onTap});
+  const TransactionRow({
+    super.key,
+    required this.transaction,
+    required this.category,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final d = transaction.transactionDate;
     final dateLabel = '${_monthAbbr[d.month - 1]} ${d.day}';
+
+    // amount is always a positive Decimal-as-string from the backend;
+    // sign for display comes from `type`, not the raw value.
+    final magnitude = double.tryParse(transaction.amount) ?? 0;
+    final signedAmount =
+        transaction.type == TransactionType.expense ? -magnitude : magnitude;
+
+    final title = (transaction.description?.trim().isNotEmpty ?? false)
+        ? transaction.description!
+        : category.name;
 
     return CupertinoButton(
       padding: EdgeInsets.zero,
@@ -54,7 +79,7 @@ class TransactionRow extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: Icon(
-                categoryIcon(transaction.categoryId.toString()),
+                categoryIcon(category.icon),
                 size: 16,
                 color: AppColors.copperDark,
               ),
@@ -64,16 +89,13 @@ class TransactionRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(transaction.categoryId.toString(),
-                      style: AppType.body.copyWith(fontSize: 14),
-                      textAlign: TextAlign.left),
+                  Text(title, style: AppType.body.copyWith(fontSize: 14)),
                   const SizedBox(height: 2),
-                  Text('${transaction.categoryId} · $dateLabel',
-                      style: AppType.caption),
+                  Text('${category.name} · $dateLabel', style: AppType.caption),
                 ],
               ),
             ),
-            AmountText(transaction.amount, size: 14),
+            AmountText(signedAmount.toStringAsFixed(2), size: 14),
           ],
         ),
       ),

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.core.security import create_access_token, verify_password, hash_password
 from app.crud.users import create_user, get_user_by_email
-from app.schemas import UserCreate
+from app.schemas import UserCreate, UserOut
 from app.schemas import Token
 
 router = APIRouter(
@@ -14,7 +14,7 @@ router = APIRouter(
 )
 
 
-@router.post("/signup", status_code=status.HTTP_201_CREATED)
+@router.post("/signup", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def signup(
     user_data: UserCreate,
     db: Session = Depends(get_db),
