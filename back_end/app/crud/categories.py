@@ -16,6 +16,11 @@ DEFAULT_CATEGORIES = [
     "Other",
 ]
 
+# Seeded with TransactionType.INCOME instead of EXPENSE.
+DEFAULT_INCOME_CATEGORIES = [
+    "Income",
+]
+
 def list_categories(
     db: Session,
     user_id: int,
@@ -112,6 +117,24 @@ def seed_default_categories(db: Session) -> None:
                     name=name,
                     user_id=None,
                     type=TransactionType.EXPENSE
+                )
+            )
+    for name in DEFAULT_INCOME_CATEGORIES:
+        statement = (
+            select(Category)
+            .where(
+                Category.name == name,
+                Category.user_id.is_(None),
+            )
+        )
+        existing = db.scalar(statement)
+        if existing is None:
+            db.add(
+                Category(
+                    name=name,
+                    user_id=None,
+                    type=TransactionType.INCOME,
+                    is_default=True,
                 )
             )
     db.commit()

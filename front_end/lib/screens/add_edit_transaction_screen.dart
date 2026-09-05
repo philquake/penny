@@ -56,6 +56,12 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     if (existing != null) {
       final match = widget.categories.where((c) => c.id == existing.categoryId);
       _category = match.isNotEmpty ? match.first : null;
+    } else if (_type == TransactionType.income) {
+      final options = widget.categories.where((c) => c.type == _type).toList();
+      final defaults = options.where((category) => category.isDefault);
+      _category = defaults.isNotEmpty
+          ? defaults.first
+          : (options.isNotEmpty ? options.first : null);
     }
   }
 
@@ -77,9 +83,15 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   void _handleTypeChanged(TransactionType type) {
     setState(() {
       _type = type;
-      // A category from the old type is no longer valid — clear it rather
-      // than let a mismatched category/type pair sneak through.
-      if (_category != null && _category!.type != type) {
+      if (type == TransactionType.income) {
+        // Auto-select the seeded default income category.
+        final options = widget.categories.where((c) => c.type == type).toList();
+        final defaults = options.where((category) => category.isDefault);
+        _category = defaults.isNotEmpty
+            ? defaults.first
+            : (options.isNotEmpty ? options.first : null);
+      } else {
+        // Expense always starts empty — no default guess.
         _category = null;
       }
     });
