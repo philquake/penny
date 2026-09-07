@@ -99,7 +99,10 @@ class BudgetStatus(BaseModel):
 class ReportSummary(BaseModel):
     total_income: Decimal
     total_expense: Decimal
-    net: Decimal
+    net: Decimal  #income - expense only
+    total_transfer: Decimal
+    total_savings: Decimal   # gain: money moved into savings this period
+    total_debt: Decimal      # loss: new debt taken on this period
 
 class CategoryBreakdownItem(BaseModel):
     category_id: int

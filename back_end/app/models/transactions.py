@@ -20,6 +20,8 @@ class TransactionType(str, Enum):
     INCOME = "income"
     EXPENSE = "expense"
     TRANSFER = "transfer"
+    SAVINGS = "savings"
+    DEBT = "debt"
     
 
 class Transaction(Base):

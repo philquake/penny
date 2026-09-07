@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from back_end.app.routers import reports
+from app.routers import reports
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 

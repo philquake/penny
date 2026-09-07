@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
 from app.models.categories import Category
@@ -36,11 +36,17 @@ def get_summary(
 
     total_income = totals.get(TransactionType.INCOME, Decimal("0"))
     total_expense = totals.get(TransactionType.EXPENSE, Decimal("0"))
+    total_transfer = totals.get(TransactionType.TRANSFER, Decimal("0"))
+    total_savings = totals.get(TransactionType.SAVINGS, Decimal("0"))
+    total_debt = totals.get(TransactionType.DEBT, Decimal("0"))
 
     return {
         "total_income": total_income,
         "total_expense": total_expense,
         "net": total_income - total_expense,
+        "total_transfer": total_transfer,
+        "total_savings": total_savings,
+        "total_debt": total_debt,
     }
 
 
@@ -50,6 +56,20 @@ def get_by_category(
     start_date: date | None = None,
     end_date: date | None = None,
 ) -> list[dict]:
+    # LEFT JOIN so categories with zero matching transactions still show
+    # up (needed for future budget-vs-actual coverage). Filters on the
+    # transaction side must live in the ON clause, not WHERE — a WHERE
+    # clause here would silently turn this back into an inner join by
+    # dropping rows where the joined transaction columns are NULL.
+    join_conditions = [
+        Transaction.category_id == Category.id,
+        Transaction.user_id == user_id,
+        Transaction.type == TransactionType.EXPENSE,
+    ]
+    if start_date is not None:
+        join_conditions.append(Transaction.transaction_date >= start_date)
+    if end_date is not None:
+        join_conditions.append(Transaction.transaction_date <= end_date)
 
     statement = (
         select(
@@ -57,28 +77,21 @@ def get_by_category(
             Category.name,
             func.coalesce(func.sum(Transaction.amount), 0),
         )
-        .join(Transaction, Transaction.category_id == Category.id)
+        .outerjoin(Transaction, and_(*join_conditions))
         .where(
-            Transaction.user_id == user_id,
-            Transaction.type == TransactionType.EXPENSE,
+            (Category.user_id == user_id) | (Category.user_id.is_(None)),
+            Category.type == TransactionType.EXPENSE,
         )
         .group_by(Category.id, Category.name)
-        .order_by(func.sum(Transaction.amount).desc())
+        .order_by(func.sum(Transaction.amount).desc().nullslast())
     )
-
-    statement = _date_filtered(statement, start_date, end_date)
 
     rows = db.execute(statement).all()
 
     return [
-        {
-            "category_id": category_id,
-            "category_name": category_name,
-            "total": total,
-        }
-        for category_id, category_name, total in rows
+        {"category_id": cid, "category_name": name, "total": total}
+        for cid, name, total in rows
     ]
-
 
 def get_trend(
     db: Session,
