@@ -203,3 +203,6 @@ CRUD result
 Pydantic response
      ↓
 JSON response
+
+
+-m uvicorn app.main:app --reload
