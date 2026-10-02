@@ -1,7 +1,11 @@
 import 'package:flutter/cupertino.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../models/category.dart';
 import '../models/transaction_type.dart';
 import '../models/transactions.dart';
+import '../services/receipt_parser.dart';
 import '../theme/app_theme.dart';
 import '../widgets/transaction_row.dart' show categoryIcon;
 
@@ -42,6 +46,8 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   late DateTime _date;
   Category? _category;
   bool _isSaving = false;
+  bool _isScanning = false;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -95,6 +101,102 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
         _category = null;
       }
     });
+  }
+
+  Future<void> _scanReceipt() async {
+    final source = await showCupertinoModalPopup<ImageSource>(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: const Text('Scan receipt'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop(ImageSource.camera),
+            child: const Text('Use camera'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop(ImageSource.gallery),
+            child: const Text('Choose photo'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
+
+    if (source == null) return;
+
+    final picked = await _picker.pickImage(source: source);
+    if (picked == null) return;
+
+    setState(() => _isScanning = true);
+    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+
+    try {
+      final image = InputImage.fromFilePath(picked.path);
+      final text = await recognizer.processImage(image);
+      final parsed = ReceiptTextParser.parse(text.text);
+
+      if (!mounted) return;
+
+      if (parsed.amount != null) {
+        _amountController.text = parsed.amount!;
+        _amountController.selection =
+            TextSelection.collapsed(offset: _amountController.text.length);
+      }
+
+      if (parsed.merchant != null && _descriptionController.text.trim().isEmpty) {
+        _descriptionController.text = parsed.merchant!;
+      }
+
+      if (parsed.date != null) {
+        setState(() => _date = parsed.date!);
+      }
+
+      if (parsed.amount != null || parsed.merchant != null || parsed.date != null) {
+        await showCupertinoDialog<void>(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Receipt parsed'),
+            content: Text(
+              [
+                if (parsed.merchant != null) 'Merchant: ${parsed.merchant}',
+                if (parsed.amount != null) 'Amount: \$${parsed.amount}',
+                if (parsed.date != null)
+                  'Date: ${parsed.date!.month}/${parsed.date!.day}/${parsed.date!.year}',
+              ].join('\n'),
+            ),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      await showCupertinoDialog<void>(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Couldn\'t scan receipt'),
+          content: Text(error.toString()),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isScanning = false);
+      }
+      recognizer.close();
+    }
   }
 
   Future<void> _pickCategory() async {
@@ -314,6 +416,17 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                 child: Text(
                   '${_monthAbbr[_date.month - 1]} ${_date.day}, ${_date.year}',
                   style: AppType.body,
+                ),
+              ),
+              const LedgerDivider(),
+              _FieldRow(
+                label: 'Receipt',
+                onTap: _scanReceipt,
+                child: Text(
+                  _isScanning ? 'Scanning…' : 'Scan receipt',
+                  style: AppType.body.copyWith(
+                    color: _isScanning ? AppColors.slate : AppColors.copper,
+                  ),
                 ),
               ),
               const LedgerDivider(),
