@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import '../models/user.dart';
+import '../services/budget_notification_service.dart';
 import '../theme/app_theme.dart';
 
 /// Settings screen.
@@ -10,12 +11,13 @@ import '../theme/app_theme.dart';
 /// tools — there's no endpoint for that yet (only signup/login exist).
 /// The AI Assistant row is shown but disabled as a signpost for Phase 5,
 /// not a fake feature.
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   final User user;
   final String serverAddress;
   final VoidCallback onSignOut;
   final VoidCallback? onChangeServer;
   final VoidCallback onManageCategories;
+  final VoidCallback onNotificationsChanged;
 
   const SettingsScreen({
     super.key,
@@ -23,15 +25,67 @@ class SettingsScreen extends StatelessWidget {
     required this.serverAddress,
     required this.onSignOut,
     required this.onManageCategories,
+    required this.onNotificationsChanged,
     this.onChangeServer,
   });
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _notificationsEnabled = false;
+  bool _notificationsLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationSetting();
+  }
+
+  Future<void> _loadNotificationSetting() async {
+    final enabled = await BudgetNotificationService.instance.isEnabled();
+    if (!mounted) return;
+    setState(() {
+      _notificationsEnabled = enabled;
+      _notificationsLoading = false;
+    });
+  }
+
+  Future<void> _setNotificationsEnabled(bool enabled) async {
+    setState(() => _notificationsLoading = true);
+    final allowed = await BudgetNotificationService.instance.setEnabled(enabled);
+    if (!mounted) return;
+    setState(() {
+      _notificationsEnabled = allowed && enabled;
+      _notificationsLoading = false;
+    });
+    if (allowed && enabled) widget.onNotificationsChanged();
+    if (enabled && !allowed) {
+      await showCupertinoDialog<void>(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Notifications are off'),
+          content: const Text(
+            'Allow notifications for Penny in your phone settings to receive budget alerts.',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      );
+    }
+  }
 
   Future<void> _confirmSignOut(BuildContext context) async {
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
       builder: (context) => CupertinoAlertDialog(
         title: const Text('Sign out?'),
-        content: Text('You\'ll need your password to sign back in to $serverAddress.'),
+        content: Text('You\'ll need your password to sign back in to ${widget.serverAddress}.'),
         actions: [
           CupertinoDialogAction(
             child: const Text('Cancel'),
@@ -46,11 +100,11 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
 
-    if (confirmed == true) onSignOut();
+    if (confirmed == true) widget.onSignOut();
   }
 
   String get _initials {
-    final parts = user.fullName.trim().split(RegExp(r'\s+'));
+    final parts = widget.user.fullName.trim().split(RegExp(r'\s+'));
     if (parts.isEmpty || parts.first.isEmpty) return '?';
     final first = parts.first[0];
     final last = parts.length > 1 ? parts.last[0] : '';
@@ -79,10 +133,10 @@ class SettingsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _ProfileCard(fullName: user.fullName, email: user.email, initials: _initials),
+                  _ProfileCard(fullName: widget.user.fullName, email: widget.user.email, initials: _initials),
                   const SizedBox(height: 8),
                   Text(
-                    'Member since ${_monthNames[user.createdAt.month - 1]} ${user.createdAt.year}',
+                    'Member since ${_monthNames[widget.user.createdAt.month - 1]} ${widget.user.createdAt.year}',
                     style: AppType.caption,
                   ),
                   const SizedBox(height: 28),
@@ -90,9 +144,9 @@ class SettingsScreen extends StatelessWidget {
                   _SettingsGroup(rows: [
                     _SettingsRow(
                       label: 'Connected to',
-                      value: serverAddress,
+                      value: widget.serverAddress,
                       icon: CupertinoIcons.wifi,
-                      onTap: onChangeServer,
+                      onTap: widget.onChangeServer,
                     ),
                   ]),
                   const SizedBox(height: 24),
@@ -101,9 +155,48 @@ class SettingsScreen extends StatelessWidget {
                     _SettingsRow(
                       label: 'Categories',
                       icon: CupertinoIcons.square_grid_2x2,
-                      onTap: onManageCategories,
+                      onTap: widget.onManageCategories,
                     ),
                   ]),
+                  const SizedBox(height: 24),
+                  _SectionLabel('Alerts'),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.hairline),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          CupertinoIcons.bell,
+                          size: 18,
+                          color: AppColors.copperDark,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Budget notifications', style: AppType.body.copyWith(fontSize: 14)),
+                              Text('Notify when a budget threshold is reached', style: AppType.caption),
+                            ],
+                          ),
+                        ),
+                        CupertinoSwitch(
+                          value: _notificationsEnabled,
+                          activeTrackColor: AppColors.copper,
+                          onChanged: _notificationsLoading
+                              ? null
+                              : _setNotificationsEnabled,
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   _SectionLabel('Data'),
                   _SettingsGroup(rows: [

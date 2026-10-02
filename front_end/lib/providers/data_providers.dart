@@ -7,6 +7,7 @@ import '../models/budget.dart';
 import '../models/budget_entry.dart';
 import '../models/category.dart';
 import '../models/transactions.dart';
+import '../services/budget_notification_service.dart';
 import 'session.dart';
 
 final categoriesRepositoryProvider =
@@ -110,7 +111,9 @@ class BudgetsController extends StateNotifier<AsyncValue<List<BudgetEntry>>> {
         final status = await _repo.status(budget.id);
         final category = categories.where((c) => c.id == budget.categoryId);
         if (category.isEmpty) continue;
-        entries.add(BudgetEntry(budget, status, category.first));
+        final entry = BudgetEntry(budget, status, category.first);
+        entries.add(entry);
+        await BudgetNotificationService.instance.updateBudget(entry);
       }
       return entries;
     });

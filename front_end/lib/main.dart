@@ -15,9 +15,12 @@ import 'screens/login_screen.dart';
 import 'screens/reports_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/transactions_screen.dart';
+import 'services/budget_notification_service.dart';
 import 'theme/app_theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await BudgetNotificationService.instance.initialize();
   runApp(const ProviderScope(child: PennyApp()));
 }
 
@@ -266,6 +269,8 @@ class _SettingsTab extends ConsumerWidget {
       // instance stored alongside the token, read at ApiClient creation).
       serverAddress: ApiConfig.baseUrl,
       onSignOut: () => ref.read(sessionProvider.notifier).signOut(),
+        onNotificationsChanged: () =>
+          ref.read(budgetsProvider.notifier).refresh(),
       onManageCategories: () {
         final categories =
             ref.read(categoriesProvider).asData?.value ?? const <Category>[];
