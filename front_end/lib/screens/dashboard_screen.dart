@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+
 import '../models/budget_entry.dart';
 import '../models/category.dart';
 import '../models/transaction_type.dart';
@@ -35,9 +36,9 @@ class DashboardScreen extends StatelessWidget {
   double _amount(Transaction t) => double.tryParse(t.amount) ?? 0;
 
   double get _totalBalance => transactions.fold(0.0, (sum, t) {
-        final a = _amount(t);
-        return sum + (t.type == TransactionType.expense ? -a : a);
-      });
+    final a = _amount(t);
+    return sum + (t.type == TransactionType.expense ? -a : a);
+  });
 
   bool _isThisMonth(DateTime d, DateTime now) =>
       d.year == now.year && d.month == now.month;
@@ -45,14 +46,22 @@ class DashboardScreen extends StatelessWidget {
   double get _monthIncome {
     final now = DateTime.now();
     return transactions
-        .where((t) => t.type == TransactionType.income && _isThisMonth(t.transactionDate, now))
+        .where(
+          (t) =>
+              t.type == TransactionType.income &&
+              _isThisMonth(t.transactionDate, now),
+        )
         .fold(0.0, (sum, t) => sum + _amount(t));
   }
 
   double get _monthExpenses {
     final now = DateTime.now();
     return transactions
-        .where((t) => t.type == TransactionType.expense && _isThisMonth(t.transactionDate, now))
+        .where(
+          (t) =>
+              t.type == TransactionType.expense &&
+              _isThisMonth(t.transactionDate, now),
+        )
         .fold(0.0, (sum, t) => sum + _amount(t));
   }
 
@@ -103,7 +112,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 32),
                   _SectionHeader(
-                    title: 'Budgets this month',
+                    title: 'Budgets',
                     actionLabel: 'View all',
                     onAction: onViewBudgets,
                   ),
@@ -114,10 +123,14 @@ class DashboardScreen extends StatelessWidget {
                       child: Text('No budgets set yet', style: AppType.caption),
                     )
                   else
-                    ...budgetEntries.take(3).map((entry) => Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: _BudgetRow(entry: entry),
-                        )),
+                    ...budgetEntries
+                        .take(3)
+                        .map(
+                          (entry) => Padding(
+                            padding: const EdgeInsets.only(bottom: 14),
+                            child: _BudgetRow(entry: entry),
+                          ),
+                        ),
                   const SizedBox(height: 24),
                   _SectionHeader(
                     title: 'Recent',
@@ -129,7 +142,10 @@ class DashboardScreen extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Center(
-                        child: Text('No transactions yet', style: AppType.caption),
+                        child: Text(
+                          'No transactions yet',
+                          style: AppType.caption,
+                        ),
                       ),
                     )
                   else
@@ -142,26 +158,280 @@ class DashboardScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           for (int i = 0; i < recent.length; i++) ...[
-                            Builder(builder: (context) {
-                              final category = _categoryFor(recent[i].categoryId);
-                              if (category == null) return const SizedBox.shrink();
-                              return TransactionRow(
-                                transaction: recent[i],
-                                category: category,
-                              );
-                            }),
+                            Builder(
+                              builder: (context) {
+                                final category = _categoryFor(
+                                  recent[i].categoryId,
+                                );
+                                if (category == null) {
+                                  return const SizedBox.shrink();
+                                }
+                                return TransactionRow(
+                                  transaction: recent[i],
+                                  category: category,
+                                );
+                              },
+                            ),
                             if (i != recent.length - 1)
                               const LedgerDivider(indent: 56),
                           ],
                         ],
                       ),
                     ),
+                    const SizedBox(height: 32),
+                    _DailySpendingCalendar(transactions: transactions),
                 ],
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DailySpendingCalendar extends StatefulWidget {
+  final List<Transaction> transactions;
+
+  const _DailySpendingCalendar({required this.transactions});
+
+  @override
+  State<_DailySpendingCalendar> createState() => _DailySpendingCalendarState();
+}
+
+class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
+  static const _monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  static const _weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  late DateTime _displayedMonth;
+  late DateTime _selectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    final today = DateTime.now();
+    _displayedMonth = DateTime(today.year, today.month);
+    _selectedDate = DateTime(today.year, today.month, today.day);
+  }
+
+  Map<int, double> get _dailyExpenses {
+    final totals = <int, double>{};
+    for (final transaction in widget.transactions) {
+      final date = transaction.transactionDate;
+      if (transaction.type != TransactionType.expense ||
+          date.year != _displayedMonth.year ||
+          date.month != _displayedMonth.month) {
+        continue;
+      }
+      totals[date.day] =
+          (totals[date.day] ?? 0) + (double.tryParse(transaction.amount) ?? 0);
+    }
+    return totals;
+  }
+
+  double get _selectedTotal {
+    if (_selectedDate.year != _displayedMonth.year ||
+        _selectedDate.month != _displayedMonth.month) {
+      return 0;
+    }
+    return _dailyExpenses[_selectedDate.day] ?? 0;
+  }
+
+  void _changeMonth(int amount) {
+    final nextMonth = DateTime(
+      _displayedMonth.year,
+      _displayedMonth.month + amount,
+    );
+    final today = DateTime.now();
+    if (nextMonth.isAfter(DateTime(today.year, today.month))) {
+      return;
+    }
+
+    final lastDay = DateTime(nextMonth.year, nextMonth.month + 1, 0).day;
+    setState(() {
+      _displayedMonth = nextMonth;
+      _selectedDate = DateTime(
+        nextMonth.year,
+        nextMonth.month,
+        _selectedDate.day.clamp(1, lastDay),
+      );
+    });
+  }
+
+  String _compactAmount(double amount) {
+    if (amount >= 10000) return '\$${(amount / 1000).toStringAsFixed(0)}k';
+    if (amount >= 1000) return '\$${(amount / 1000).toStringAsFixed(1)}k';
+    return '\$${amount.toStringAsFixed(0)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final daysInMonth = DateTime(
+      _displayedMonth.year,
+      _displayedMonth.month + 1,
+      0,
+    ).day;
+    final leadingDays =
+        DateTime(_displayedMonth.year, _displayedMonth.month).weekday - 1;
+    final cellCount = ((leadingDays + daysInMonth + 6) ~/ 7) * 7;
+    final dailyExpenses = _dailyExpenses;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Daily spending',
+                style: AppType.title.copyWith(fontSize: 17),
+              ),
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(32, 32),
+              onPressed: () => _changeMonth(-1),
+              child: const Icon(
+                CupertinoIcons.chevron_left,
+                size: 17,
+                color: AppColors.slate,
+              ),
+            ),
+            Text(
+              '${_monthNames[_displayedMonth.month - 1]} ${_displayedMonth.year}',
+              style: AppType.label,
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(32, 32),
+              onPressed:
+                  _displayedMonth.year == DateTime.now().year &&
+                      _displayedMonth.month == DateTime.now().month
+                  ? null
+                  : () => _changeMonth(1),
+              child: const Icon(
+                CupertinoIcons.chevron_right,
+                size: 17,
+                color: AppColors.slate,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const LedgerDivider(),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            for (final weekday in _weekdays)
+              Expanded(
+                child: Center(
+                  child: Text(
+                    weekday,
+                    style: AppType.caption.copyWith(fontSize: 10),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: cellCount,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 7,
+            mainAxisExtent: 48,
+          ),
+          itemBuilder: (context, index) {
+            final day = index - leadingDays + 1;
+            if (day < 1 || day > daysInMonth) return const SizedBox.shrink();
+
+            final date = DateTime(
+              _displayedMonth.year,
+              _displayedMonth.month,
+              day,
+            );
+            final total = dailyExpenses[day] ?? 0;
+            final isSelected = date == _selectedDate;
+            final isToday =
+                date ==
+                DateTime.now().copyWith(
+                  hour: 0,
+                  minute: 0,
+                  second: 0,
+                  millisecond: 0,
+                  microsecond: 0,
+                );
+
+            return Padding(
+              padding: const EdgeInsets.all(2),
+              child: CupertinoButton(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                onPressed: () => setState(() => _selectedDate = date),
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.paperDim : null,
+                    borderRadius: BorderRadius.circular(6),
+                    border: isToday && !isSelected
+                        ? Border.all(color: AppColors.hairline)
+                        : null,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('$day', style: AppType.body.copyWith(fontSize: 12)),
+                      if (total > 0)
+                        Text(
+                          _compactAmount(total),
+                          maxLines: 1,
+                          overflow: TextOverflow.clip,
+                          style: AppType.amount(
+                            size: 8,
+                            weight: FontWeight.w500,
+                            color: AppColors.rust,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 8),
+        const LedgerDivider(),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Spent on ${_monthNames[_selectedDate.month - 1]} ${_selectedDate.day}',
+                style: AppType.caption,
+              ),
+            ),
+            AmountText(
+              _selectedTotal.toStringAsFixed(2),
+              size: 15,
+              colorBySign: false,
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -245,8 +515,12 @@ class _FlowStat extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        AmountText(value.toStringAsFixed(2),
-            size: 17, weight: FontWeight.w600, colorBySign: false),
+        AmountText(
+          value.toStringAsFixed(2),
+          size: 17,
+          weight: FontWeight.w600,
+          colorBySign: false,
+        ),
       ],
     );
   }
@@ -301,7 +575,10 @@ class _BudgetRow extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(entry.category.name, style: AppType.body.copyWith(fontSize: 14)),
+            Text(
+              entry.category.name,
+              style: AppType.body.copyWith(fontSize: 14),
+            ),
             Text(
               '\$${spent.toStringAsFixed(0)} of \$${limit.toStringAsFixed(0)}',
               style: AppType.amount(
