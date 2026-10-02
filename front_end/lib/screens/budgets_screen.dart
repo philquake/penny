@@ -36,6 +36,12 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
     _entries = List.of(widget.entries);
   }
 
+  @override
+  void didUpdateWidget(covariant BudgetsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _entries = List.of(widget.entries);
+  }
+
   Future<void> _confirmDelete(BudgetEntry entry) async {
     final confirmed = await showCupertinoDialog<bool>(
       context: context,
@@ -78,27 +84,31 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       // Optimistic placeholder — real spend comes from the server on
       // next fetch; show it fresh (0% used) until then.
       setState(() {
-        _entries.add(BudgetEntry(
-          Budget(
-            id: -_entries.length - 1,
-            userId: 1,
-            categoryId: created.categoryId,
-            amount: created.amount,
-            period: created.period,
-            periodStart: created.periodStart,
-            periodEnd: created.periodEnd,
-            alertThresholdPercent: created.alertThresholdPercent,
+        _entries.add(
+          BudgetEntry(
+            Budget(
+              id: -_entries.length - 1,
+              userId: 1,
+              categoryId: created.categoryId,
+              amount: created.amount,
+              period: created.period,
+              periodStart: created.periodStart,
+              periodEnd: created.periodEnd,
+              alertThresholdPercent: created.alertThresholdPercent,
+            ),
+            BudgetStatus(
+              budgetId: -_entries.length - 1,
+              spentAmount: '0.00',
+              remainingAmount: created.amount,
+              percentageUsed: '0',
+              status: 'normal',
+              thresholdCrossed: false,
+            ),
+            widget.expenseCategories.firstWhere(
+              (c) => c.id == created.categoryId,
+            ),
           ),
-          BudgetStatus(
-            budgetId: -_entries.length - 1,
-            spentAmount: '0.00',
-            remainingAmount: created.amount,
-            percentageUsed: '0',
-            status: 'normal',
-            thresholdCrossed: false,
-          ),
-          widget.expenseCategories.firstWhere((c) => c.id == created.categoryId),
-        ));
+        );
       });
     }
   }
@@ -322,7 +332,13 @@ class _EmptyState extends StatelessWidget {
               color: AppColors.copper,
               borderRadius: BorderRadius.circular(8),
               onPressed: onAdd,
-              child: const Text('Add Budget'),
+              child: Text(
+                'Add Budget',
+                style: AppType.body.copyWith(
+                  color: CupertinoColors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),
