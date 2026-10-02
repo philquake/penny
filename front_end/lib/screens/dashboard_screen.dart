@@ -15,13 +15,15 @@ import '../widgets/transaction_row.dart';
 /// totals, the "recent" slice, and category lookups are all derived here
 /// from the full lists, so there's one source of truth (the providers)
 /// instead of screen-local mock state.
-class DashboardScreen extends StatelessWidget {
+enum _DashboardView { overview, expenses }
+
+class DashboardScreen extends StatefulWidget {
   final List<Category> categories;
   final List<Transaction> transactions;
   final List<BudgetEntry> budgetEntries;
   final VoidCallback onAddTransaction;
   final VoidCallback onViewBudgets;
-  final VoidCallback onViewTransactions;
+  final VoidCallback? onViewTransactions;
 
   const DashboardScreen({
     super.key,
@@ -30,12 +32,19 @@ class DashboardScreen extends StatelessWidget {
     required this.budgetEntries,
     required this.onAddTransaction,
     required this.onViewBudgets,
-    required this.onViewTransactions,
+    this.onViewTransactions,
   });
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  _DashboardView _selectedView = _DashboardView.overview;
 
   double _amount(Transaction t) => double.tryParse(t.amount) ?? 0;
 
-  double get _totalBalance => transactions.fold(0.0, (sum, t) {
+  double get _totalBalance => widget.transactions.fold(0.0, (sum, t) {
     final a = _amount(t);
     return sum + (t.type == TransactionType.expense ? -a : a);
   });
@@ -45,7 +54,7 @@ class DashboardScreen extends StatelessWidget {
 
   double get _monthIncome {
     final now = DateTime.now();
-    return transactions
+    return widget.transactions
         .where(
           (t) =>
               t.type == TransactionType.income &&
@@ -56,7 +65,7 @@ class DashboardScreen extends StatelessWidget {
 
   double get _monthExpenses {
     final now = DateTime.now();
-    return transactions
+    return widget.transactions
         .where(
           (t) =>
               t.type == TransactionType.expense &&
@@ -66,15 +75,20 @@ class DashboardScreen extends StatelessWidget {
   }
 
   List<Transaction> get _recent {
-    final sorted = [...transactions]
+    final sorted = [...widget.transactions]
       ..sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
     return sorted.take(5).toList();
   }
 
   Category? _categoryFor(int id) {
-    final match = categories.where((c) => c.id == id);
+    final match = widget.categories.where((c) => c.id == id);
     return match.isNotEmpty ? match.first : null;
   }
+
+  Widget _segmentLabel(String text) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Text(text, style: AppType.body.copyWith(fontSize: 13)),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -82,105 +96,185 @@ class DashboardScreen extends StatelessWidget {
 
     return CupertinoPageScaffold(
       backgroundColor: AppColors.paper,
-      child: CustomScrollView(
-        slivers: [
-          CupertinoSliverNavigationBar(
-            backgroundColor: AppColors.paper,
-            border: null,
-            largeTitle: const Text('Penny'),
-            trailing: CupertinoButton(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(32, 32),
-              onPressed: onAddTransaction,
-              child: const Icon(
-                CupertinoIcons.add_circled_solid,
-                color: AppColors.copper,
-                size: 28,
+      child: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              CupertinoSliverNavigationBar(
+                backgroundColor: AppColors.paper,
+                border: null,
+                largeTitle: const Text('Overview'),
               ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _BalanceBlock(
-                    balance: _totalBalance,
-                    income: _monthIncome,
-                    expenses: _monthExpenses,
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                  child: CupertinoSlidingSegmentedControl<_DashboardView>(
+                    backgroundColor: AppColors.paperDim,
+                    thumbColor: CupertinoColors.white,
+                    groupValue: _selectedView,
+                    children: {
+                      _DashboardView.overview: _segmentLabel('Overview'),
+                      _DashboardView.expenses: _segmentLabel('Expenses'),
+                    },
+                    onValueChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedView = value);
+                      }
+                    },
                   ),
-                  const SizedBox(height: 32),
-                  _SectionHeader(
-                    title: 'Budgets',
-                    actionLabel: 'View all',
-                    onAction: onViewBudgets,
-                  ),
-                  const SizedBox(height: 12),
-                  if (budgetEntries.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Text('No budgets set yet', style: AppType.caption),
-                    )
-                  else
-                    ...budgetEntries
-                        .take(3)
-                        .map(
-                          (entry) => Padding(
-                            padding: const EdgeInsets.only(bottom: 14),
-                            child: _BudgetRow(entry: entry),
-                          ),
+                ),
+              ),
+              if (_selectedView == _DashboardView.overview)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _BalanceBlock(
+                          balance: _totalBalance,
+                          income: _monthIncome,
+                          expenses: _monthExpenses,
                         ),
-                  const SizedBox(height: 24),
-                  _SectionHeader(
-                    title: 'Recent',
-                    actionLabel: 'View all',
-                    onAction: onViewTransactions,
-                  ),
-                  const SizedBox(height: 4),
-                  if (recent.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Center(
-                        child: Text(
-                          'No transactions yet',
-                          style: AppType.caption,
+                        const SizedBox(height: 32),
+                        _SectionHeader(
+                          title: 'Budgets',
+                          actionLabel: 'View all',
+                          onAction: widget.onViewBudgets,
                         ),
-                      ),
-                    )
-                  else
-                    Container(
-                      decoration: BoxDecoration(
-                        color: CupertinoColors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.hairline),
-                      ),
-                      child: Column(
-                        children: [
-                          for (int i = 0; i < recent.length; i++) ...[
-                            Builder(
-                              builder: (context) {
-                                final category = _categoryFor(
-                                  recent[i].categoryId,
-                                );
-                                if (category == null) {
-                                  return const SizedBox.shrink();
-                                }
-                                return TransactionRow(
-                                  transaction: recent[i],
-                                  category: category,
-                                );
-                              },
+                        const SizedBox(height: 12),
+                        if (widget.budgetEntries.isEmpty)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
                             ),
-                            if (i != recent.length - 1)
-                              const LedgerDivider(indent: 56),
-                          ],
-                        ],
-                      ),
+                            decoration: BoxDecoration(
+                              color: CupertinoColors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.hairline),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  CupertinoIcons.chart_bar,
+                                  color: AppColors.slate,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'No budgets set yet',
+                                    style: AppType.body.copyWith(fontSize: 14),
+                                  ),
+                                ),
+                                CupertinoButton(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                  minimumSize: Size.zero,
+                                  onPressed: widget.onViewBudgets,
+                                  child: Text(
+                                    'Create budget',
+                                    style: AppType.label.copyWith(
+                                      color: AppColors.copper,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          ...widget.budgetEntries
+                              .take(3)
+                              .map(
+                                (entry) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 14),
+                                  child: _BudgetRow(entry: entry),
+                                ),
+                              ),
+                        const SizedBox(height: 24),
+                        _SectionHeader(
+                          title: 'Recent',
+                          actionLabel: 'View all',
+                          onAction: () {
+                            widget.onViewTransactions?.call();
+                            setState(() => _selectedView = _DashboardView.expenses);
+                          },
+                        ),
+                        const SizedBox(height: 4),
+                        if (recent.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: Text(
+                                'No transactions yet',
+                                style: AppType.caption,
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            decoration: BoxDecoration(
+                              color: CupertinoColors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.hairline),
+                            ),
+                            child: Column(
+                              children: [
+                                for (int i = 0; i < recent.length; i++) ...[
+                                  Builder(
+                                    builder: (context) {
+                                      final category = _categoryFor(
+                                        recent[i].categoryId,
+                                      );
+                                      if (category == null) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return TransactionRow(
+                                        transaction: recent[i],
+                                        category: category,
+                                      );
+                                    },
+                                  ),
+                                  if (i != recent.length - 1)
+                                    const LedgerDivider(indent: 56),
+                                ],
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 32),
+                        _DailySpendingCalendar(transactions: widget.transactions),
+                      ],
                     ),
-                    const SizedBox(height: 32),
-                    _DailySpendingCalendar(transactions: transactions),
-                ],
+                  ),
+                )
+              else
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    child: _ExpensesList(
+                      transactions: widget.transactions,
+                      categories: widget.categories,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          Positioned(
+            right: 20,
+            bottom: 24,
+            child: CupertinoButton(
+              padding: const EdgeInsets.all(12),
+              minimumSize: const Size(56, 56),
+              borderRadius: BorderRadius.circular(28),
+              color: AppColors.copper,
+              onPressed: widget.onAddTransaction,
+              child: const Icon(
+                CupertinoIcons.add,
+                color: CupertinoColors.white,
+                size: 28,
               ),
             ),
           ),
@@ -190,6 +284,129 @@ class DashboardScreen extends StatelessWidget {
   }
 }
 
+class _ExpensesList extends StatefulWidget {
+  final List<Transaction> transactions;
+  final List<Category> categories;
+
+  const _ExpensesList({
+    required this.transactions,
+    required this.categories,
+  });
+
+  @override
+  State<_ExpensesList> createState() => _ExpensesListState();
+}
+
+class _ExpensesListState extends State<_ExpensesList> {
+  final _searchController = TextEditingController();
+  _FlowFilter _filter = _FlowFilter.all;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Category? _categoryFor(int id) {
+    final match = widget.categories.where((c) => c.id == id);
+    return match.isNotEmpty ? match.first : null;
+  }
+
+  List<Transaction> get _filtered {
+    final query = _searchController.text.trim().toLowerCase();
+    return widget.transactions.where((t) {
+      final matchesFlow = switch (_filter) {
+        _FlowFilter.all => true,
+        _FlowFilter.income => t.type == TransactionType.income,
+        _FlowFilter.expenses => t.type == TransactionType.expense,
+      };
+      final category = _categoryFor(t.categoryId);
+      final matchesQuery = query.isEmpty ||
+          (t.description?.toLowerCase().contains(query) ?? false) ||
+          (category?.name.toLowerCase().contains(query) ?? false);
+      return matchesFlow && matchesQuery;
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = _filtered;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        CupertinoSearchTextField(
+          controller: _searchController,
+          placeholder: 'Search description or category',
+          style: AppType.body,
+          backgroundColor: CupertinoColors.white,
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 12),
+        CupertinoSlidingSegmentedControl<_FlowFilter>(
+          backgroundColor: AppColors.paperDim,
+          thumbColor: CupertinoColors.white,
+          groupValue: _filter,
+          children: {
+            _FlowFilter.all: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text('All', style: AppType.body.copyWith(fontSize: 13)),
+            ),
+            _FlowFilter.income: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text('Income', style: AppType.body.copyWith(fontSize: 13)),
+            ),
+            _FlowFilter.expenses: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text('Expenses', style: AppType.body.copyWith(fontSize: 13)),
+            ),
+          },
+          onValueChanged: (value) {
+            if (value != null) setState(() => _filter = value);
+          },
+        ),
+        const SizedBox(height: 16),
+        if (rows.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                _searchController.text.isEmpty
+                    ? 'No transactions yet'
+                    : 'No matching transactions',
+                style: AppType.caption,
+              ),
+            ),
+          )
+        else
+          Container(
+            decoration: BoxDecoration(
+              color: CupertinoColors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.hairline),
+            ),
+            child: Column(
+              children: [
+                for (int i = 0; i < rows.length; i++) ...[
+                  Builder(builder: (context) {
+                    final category = _categoryFor(rows[i].categoryId);
+                    if (category == null) return const SizedBox.shrink();
+                    return TransactionRow(
+                      transaction: rows[i],
+                      category: category,
+                    );
+                  }),
+                  if (i != rows.length - 1)
+                    const LedgerDivider(indent: 56),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+enum _FlowFilter { all, income, expenses }
 class _DailySpendingCalendar extends StatefulWidget {
   final List<Transaction> transactions;
 

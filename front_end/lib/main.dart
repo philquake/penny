@@ -14,7 +14,6 @@ import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/reports_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/transactions_screen.dart';
 import 'services/budget_notification_service.dart';
 import 'theme/app_theme.dart';
 
@@ -63,7 +62,7 @@ class _AppRoot extends ConsumerWidget {
   }
 }
 
-/// The authenticated app: five tabs, each its own CupertinoTabView so
+/// The authenticated app: four tabs, each its own CupertinoTabView so
 /// pushed screens (Add/Edit Transaction, Categories) get their own
 /// navigation stack per tab, matching standard iOS tab bar behavior.
 class _AppShell extends StatefulWidget {
@@ -92,9 +91,7 @@ class _AppShellState extends State<_AppShell> {
         inactiveColor: AppColors.slateLight,
         items: const [
           BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.house), label: 'Home'),
-          BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.list_bullet), label: 'Transactions'),
+              icon: Icon(CupertinoIcons.house), label: 'Overview'),
           BottomNavigationBarItem(
               icon: Icon(CupertinoIcons.chart_bar_alt_fill), label: 'Budgets'),
           BottomNavigationBarItem(
@@ -106,10 +103,8 @@ class _AppShellState extends State<_AppShell> {
       tabBuilder: (context, index) {
         final tabs = [
           _HomeTab(
-            onViewBudgets: () => _tabController.index = 2,
-            onViewTransactions: () => _tabController.index = 1,
+            onViewBudgets: () => _tabController.index = 1,
           ),
-          const _TransactionsTab(),
           const _BudgetsTab(),
           const _ReportsTab(),
           const _SettingsTab(),
@@ -173,11 +168,9 @@ Future<void> _openAddEditTransaction(
 
 class _HomeTab extends ConsumerWidget {
   final VoidCallback onViewBudgets;
-  final VoidCallback onViewTransactions;
 
   const _HomeTab({
     required this.onViewBudgets,
-    required this.onViewTransactions,
   });
 
   @override
@@ -195,30 +188,8 @@ class _HomeTab extends ConsumerWidget {
             budgetEntries: budgetEntries,
             onAddTransaction: () => _openAddEditTransaction(context, ref),
             onViewBudgets: onViewBudgets,
-            onViewTransactions: onViewTransactions,
           );
         });
-      });
-    });
-  }
-}
-
-class _TransactionsTab extends ConsumerWidget {
-  const _TransactionsTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final categoriesState = ref.watch(categoriesProvider);
-    final transactionsState = ref.watch(transactionsProvider);
-
-    return _asyncBody(categoriesState, data: (categories) {
-      return _asyncBody(transactionsState, data: (transactions) {
-        return TransactionsScreen(
-          transactions: transactions,
-          categories: categories,
-          onTransactionTap: (transaction) =>
-              _openAddEditTransaction(context, ref, existing: transaction),
-        );
       });
     });
   }

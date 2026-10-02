@@ -5,6 +5,31 @@ import 'package:penny/models/transactions.dart';
 import 'package:penny/screens/dashboard_screen.dart';
 
 void main() {
+  testWidgets('dashboard shows an actionable empty budget state', (
+    tester,
+  ) async {
+    var budgetsOpened = false;
+
+    await tester.pumpWidget(
+      CupertinoApp(
+        home: DashboardScreen(
+          categories: const [],
+          transactions: const [],
+          budgetEntries: const [],
+          onAddTransaction: () {},
+          onViewBudgets: () => budgetsOpened = true,
+          onViewTransactions: () {},
+        ),
+      ),
+    );
+
+    expect(find.text('No budgets set yet'), findsOneWidget);
+    expect(find.text('Create budget'), findsOneWidget);
+
+    await tester.tap(find.text('Create budget'));
+    expect(budgetsOpened, isTrue);
+  });
+
   testWidgets('calendar totals expenses by day and excludes income', (
     tester,
   ) async {
