@@ -27,6 +27,7 @@ class BudgetPeriod(str, Enum):
     WEEKLY = "weekly"
     MONTHLY = "monthly"
     YEARLY = "yearly"
+    CUSTOM = "custom"
     
 class User(Base):
     __tablename__ = "users"
