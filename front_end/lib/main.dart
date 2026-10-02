@@ -66,12 +66,26 @@ class _AppRoot extends ConsumerWidget {
 /// The authenticated app: five tabs, each its own CupertinoTabView so
 /// pushed screens (Add/Edit Transaction, Categories) get their own
 /// navigation stack per tab, matching standard iOS tab bar behavior.
-class _AppShell extends StatelessWidget {
+class _AppShell extends StatefulWidget {
   const _AppShell();
+
+  @override
+  State<_AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<_AppShell> {
+  late final CupertinoTabController _tabController = CupertinoTabController();
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return CupertinoTabScaffold(
+      controller: _tabController,
       tabBar: CupertinoTabBar(
         backgroundColor: AppColors.paper,
         activeColor: AppColors.copper,
@@ -91,7 +105,10 @@ class _AppShell extends StatelessWidget {
       ),
       tabBuilder: (context, index) {
         final tabs = [
-          const _HomeTab(),
+          _HomeTab(
+            onViewBudgets: () => _tabController.index = 2,
+            onViewTransactions: () => _tabController.index = 1,
+          ),
           const _TransactionsTab(),
           const _BudgetsTab(),
           const _ReportsTab(),
@@ -155,7 +172,13 @@ Future<void> _openAddEditTransaction(
 }
 
 class _HomeTab extends ConsumerWidget {
-  const _HomeTab();
+  final VoidCallback onViewBudgets;
+  final VoidCallback onViewTransactions;
+
+  const _HomeTab({
+    required this.onViewBudgets,
+    required this.onViewTransactions,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -171,13 +194,8 @@ class _HomeTab extends ConsumerWidget {
             transactions: transactions,
             budgetEntries: budgetEntries,
             onAddTransaction: () => _openAddEditTransaction(context, ref),
-            onViewBudgets: () {
-              // Switching tabs programmatically isn't wired here to keep
-              // this straightforward — the Budgets tab is one tap away.
-            },
-            onViewTransactions: () {
-              // Same as above — see note on onViewBudgets.
-            },
+            onViewBudgets: onViewBudgets,
+            onViewTransactions: onViewTransactions,
           );
         });
       });
