@@ -3,7 +3,6 @@ import '../models/budget.dart';
 import '../models/budget_entry.dart';
 import '../models/budget_period.dart';
 import '../models/category.dart';
-import '../models/transaction_type.dart';
 import '../theme/app_theme.dart';
 import '../widgets/transaction_row.dart' show categoryIcon;
 
@@ -172,9 +171,13 @@ class _BudgetCard extends StatelessWidget {
       case BudgetPeriod.weekly:
         return 'Weekly';
       case BudgetPeriod.monthly:
-        return 'Monthly';
+        return 'Monthly (day ${entry.budget.periodStart.day})';
       case BudgetPeriod.yearly:
         return 'Yearly';
+      case BudgetPeriod.custom:
+        final start = entry.budget.periodStart;
+        final end = entry.budget.periodEnd;
+        return 'Custom (${start.month}/${start.day} - ${end.month}/${end.day})';
     }
   }
 
@@ -326,12 +329,14 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
   final _amountController = TextEditingController();
   BudgetPeriod _period = BudgetPeriod.monthly;
   DateTime _start = DateTime.now();
+  late DateTime _customEnd;
   double _threshold = 80;
 
   @override
   void initState() {
     super.initState();
     _category = widget.categories.first;
+    _customEnd = _start.add(const Duration(days: 29));
   }
 
   @override
@@ -345,11 +350,18 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
       case BudgetPeriod.weekly:
         return _start.add(const Duration(days: 6));
       case BudgetPeriod.monthly:
-        return DateTime(_start.year, _start.month + 1, _start.day)
-            .subtract(const Duration(days: 1));
+        final nextMonth = DateTime(_start.year, _start.month + 1);
+        final lastDay = DateTime(nextMonth.year, nextMonth.month + 1, 0).day;
+        return DateTime(
+          nextMonth.year,
+          nextMonth.month,
+          _start.day.clamp(1, lastDay),
+        ).subtract(const Duration(days: 1));
       case BudgetPeriod.yearly:
         return DateTime(_start.year + 1, _start.month, _start.day)
             .subtract(const Duration(days: 1));
+      case BudgetPeriod.custom:
+        return _customEnd;
     }
   }
 
@@ -411,7 +423,12 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                 child: CupertinoDatePicker(
                   mode: CupertinoDatePickerMode.date,
                   initialDateTime: _start,
-                  onDateTimeChanged: (value) => setState(() => _start = value),
+                  onDateTimeChanged: (value) => setState(() {
+                    _start = value;
+                    if (_customEnd.isBefore(_start)) {
+                      _customEnd = _start.add(const Duration(days: 29));
+                    }
+                  }),
                 ),
               ),
             ],
@@ -419,6 +436,65 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
         ),
       ),
     );
+  }
+
+  Future<void> _pickEndDate() async {
+    await showCupertinoModalPopup(
+      context: context,
+      builder: (context) => Container(
+        height: 260,
+        color: AppColors.paper,
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  CupertinoButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Done'),
+                  ),
+                ],
+              ),
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: _customEnd.isBefore(_start) ? _start : _customEnd,
+                  minimumDate: _start,
+                  onDateTimeChanged: (value) => setState(() => _customEnd = value),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickMonthlyDay() async {
+    final day = await showCupertinoModalPopup<int>(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: Text('Monthly start day', style: AppType.label),
+        actions: [
+          for (var value = 1; value <= 31; value++)
+            CupertinoActionSheetAction(
+              onPressed: () => Navigator.of(context).pop(value),
+              child: Text('Day $value', style: AppType.body),
+            ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
+    if (day == null) return;
+    setState(() {
+      final lastDay = DateTime(_start.year, _start.month + 1, 0).day;
+      _start = DateTime(_start.year, _start.month, day.clamp(1, lastDay));
+    });
   }
 
   static const _monthAbbr = [
@@ -490,20 +566,35 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 child: Row(
                   children: [
-                    SizedBox(width: 100, child: Text('Period', style: AppType.label)),
                     Expanded(
-                      child: CupertinoSlidingSegmentedControl<BudgetPeriod>(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Period', style: AppType.label),
+                          const SizedBox(height: 8),
+                          CupertinoSlidingSegmentedControl<BudgetPeriod>(
                         backgroundColor: AppColors.paperDim,
                         thumbColor: CupertinoColors.white,
                         groupValue: _period,
                         children: {
-                          BudgetPeriod.weekly: _segmentLabel('Weekly'),
-                          BudgetPeriod.monthly: _segmentLabel('Monthly'),
-                          BudgetPeriod.yearly: _segmentLabel('Yearly'),
+                          BudgetPeriod.weekly: _segmentLabel('Week'),
+                          BudgetPeriod.monthly: _segmentLabel('Month'),
+                          BudgetPeriod.yearly: _segmentLabel('Year'),
+                          BudgetPeriod.custom: _segmentLabel('Custom'),
                         },
                         onValueChanged: (value) {
-                          if (value != null) setState(() => _period = value);
+                          if (value != null) {
+                            setState(() {
+                              _period = value;
+                              if (value == BudgetPeriod.custom &&
+                                  _customEnd.isBefore(_start)) {
+                                _customEnd = _start.add(const Duration(days: 29));
+                              }
+                            });
+                          }
                         },
+                      ),
+                        ],
                       ),
                     ),
                   ],
@@ -511,13 +602,32 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
               ),
               const LedgerDivider(),
               _SheetFieldRow(
-                label: 'Starts',
+                label: _period == BudgetPeriod.monthly ? 'Starts' : 'From',
                 onTap: _pickStartDate,
                 child: Text(
                   '${_monthAbbr[_start.month - 1]} ${_start.day}, ${_start.year}',
                   style: AppType.body,
                 ),
               ),
+              if (_period == BudgetPeriod.monthly) ...[
+                const LedgerDivider(),
+                _SheetFieldRow(
+                  label: 'Monthly day',
+                  onTap: _pickMonthlyDay,
+                  child: Text('Day ${_start.day}', style: AppType.body),
+                ),
+              ],
+              if (_period == BudgetPeriod.custom) ...[
+                const LedgerDivider(),
+                _SheetFieldRow(
+                  label: 'Until',
+                  onTap: _pickEndDate,
+                  child: Text(
+                    '${_monthAbbr[_customEnd.month - 1]} ${_customEnd.day}, ${_customEnd.year}',
+                    style: AppType.body,
+                  ),
+                ),
+              ],
               const LedgerDivider(),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -528,7 +638,8 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Alert threshold', style: AppType.label),
-                        Text('${_threshold.round()}%',
+                        Text(
+                          _threshold == 0 ? 'Off' : '${_threshold.round()}%',
                             style: AppType.amount(size: 13, color: AppColors.copper)),
                       ],
                     ),

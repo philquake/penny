@@ -2,6 +2,7 @@ enum BudgetPeriod {
   weekly,
   monthly,
   yearly,
+  custom,
 }
 
 extension BudgetPeriodExtension on BudgetPeriod {
@@ -13,6 +14,8 @@ extension BudgetPeriodExtension on BudgetPeriod {
         return 'monthly';
       case BudgetPeriod.yearly:
         return 'yearly';
+      case BudgetPeriod.custom:
+        return 'custom';
     }
   }
 
@@ -24,6 +27,8 @@ extension BudgetPeriodExtension on BudgetPeriod {
         return BudgetPeriod.monthly;
       case 'yearly':
         return BudgetPeriod.yearly;
+      case 'custom':
+        return BudgetPeriod.custom;
       default:
         throw ArgumentError(
           'Unknown budget period: $value',
