@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 
 import 'core/api_config.dart';
 import 'models/category.dart';
@@ -15,7 +16,10 @@ import 'screens/login_screen.dart';
 import 'screens/reports_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/budget_notification_service.dart';
-import 'theme/app_theme.dart';
+
+import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
+import 'core/theme/theme_x.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,19 +27,22 @@ Future<void> main() async {
   runApp(const ProviderScope(child: PennyApp()));
 }
 
-class PennyApp extends StatelessWidget {
+class PennyApp extends ConsumerWidget {
   const PennyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return CupertinoApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final preference = ref.watch(themeProvider); // name from your theme_provider.dart
+    return MaterialApp(
       title: 'Penny',
-      theme: AppTheme.cupertino,
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: preference.mode,
       home: const _AppRoot(),
     );
   }
 }
-
 /// Reacts to session state: a spinner while checking for a stored token,
 /// the Login screen if signed out, the tabbed shell if signed in.
 class _AppRoot extends ConsumerWidget {
@@ -47,8 +54,8 @@ class _AppRoot extends ConsumerWidget {
 
     switch (session.status) {
       case SessionStatus.bootstrapping:
-        return const CupertinoPageScaffold(
-          backgroundColor: AppColors.paper,
+        return  CupertinoPageScaffold(
+          backgroundColor: context.colors.surface,
           child: Center(child: CupertinoActivityIndicator()),
         );
       case SessionStatus.signedOut:
@@ -86,9 +93,9 @@ class _AppShellState extends State<_AppShell> {
     return CupertinoTabScaffold(
       controller: _tabController,
       tabBar: CupertinoTabBar(
-        backgroundColor: AppColors.paper,
-        activeColor: AppColors.copper,
-        inactiveColor: AppColors.slateLight,
+        backgroundColor: context.colors.surface,
+        activeColor: context.colors.primary,
+        inactiveColor: context.colors.outline,
         items: const [
           BottomNavigationBarItem(
               icon: Icon(CupertinoIcons.house), label: 'Overview'),
@@ -117,23 +124,24 @@ class _AppShellState extends State<_AppShell> {
 
 /// Shared loading/error handling so each tab doesn't repeat it.
 Widget _asyncBody<T>(
+  BuildContext context,
   AsyncValue<T> value, {
   required Widget Function(T data) data,
 }) {
   return value.when(
     data: data,
-    loading: () => const CupertinoPageScaffold(
-      backgroundColor: AppColors.paper,
+    loading: () =>  CupertinoPageScaffold(
+      backgroundColor: context.colors.surface,
       child: Center(child: CupertinoActivityIndicator()),
     ),
     error: (error, stack) => CupertinoPageScaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: context.colors.surface,
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding:  EdgeInsets.all(24),
           child: Text(
             'Couldn\'t load data.\n$error',
-            style: AppType.body.copyWith(color: AppColors.rust),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: context.colors.error),
             textAlign: TextAlign.center,
           ),
         ),
@@ -179,19 +187,25 @@ class _HomeTab extends ConsumerWidget {
     final transactionsState = ref.watch(transactionsProvider);
     final budgetsState = ref.watch(budgetsProvider);
 
-    return _asyncBody(categoriesState, data: (categories) {
-      return _asyncBody(transactionsState, data: (transactions) {
-        return _asyncBody(budgetsState, data: (budgetEntries) {
-          return DashboardScreen(
+    return _asyncBody(
+      context,
+      categoriesState,
+      data: (categories) => _asyncBody(
+        context,
+        transactionsState,
+        data: (transactions) => _asyncBody(
+          context,
+          budgetsState,
+          data: (budgetEntries) => DashboardScreen(
             categories: categories,
             transactions: transactions,
             budgetEntries: budgetEntries,
             onAddTransaction: () => _openAddEditTransaction(context, ref),
             onViewBudgets: onViewBudgets,
-          );
-        });
-      });
-    });
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -203,8 +217,8 @@ class _BudgetsTab extends ConsumerWidget {
     final categoriesState = ref.watch(categoriesProvider);
     final budgetsState = ref.watch(budgetsProvider);
 
-    return _asyncBody(categoriesState, data: (categories) {
-      return _asyncBody(budgetsState, data: (entries) {
+    return _asyncBody(context,categoriesState, data: (categories) {
+      return _asyncBody(context,budgetsState, data: (entries) {
         final expenseCategories =
             categories.where((c) => c.type == TransactionType.expense).toList();
         return BudgetsScreen(
@@ -226,8 +240,8 @@ class _ReportsTab extends ConsumerWidget {
     final categoriesState = ref.watch(categoriesProvider);
     final transactionsState = ref.watch(transactionsProvider);
 
-    return _asyncBody(categoriesState, data: (categories) {
-      return _asyncBody(transactionsState, data: (transactions) {
+    return _asyncBody(context,categoriesState, data: (categories) {
+      return _asyncBody(context,transactionsState, data: (transactions) {
         return ReportsScreen(transactions: transactions, categories: categories);
       });
     });
@@ -242,8 +256,8 @@ class _SettingsTab extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final user = session.user;
     if (user == null) {
-      return const CupertinoPageScaffold(
-        backgroundColor: AppColors.paper,
+      return CupertinoPageScaffold(
+        backgroundColor: context.colors.surface,
         child: Center(child: CupertinoActivityIndicator()),
       );
     }

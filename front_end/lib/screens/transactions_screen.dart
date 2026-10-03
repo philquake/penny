@@ -2,8 +2,9 @@ import 'package:flutter/cupertino.dart';
 import '../models/category.dart';
 import '../models/transaction_type.dart';
 import '../models/transactions.dart';
-import '../theme/app_theme.dart';
 import '../widgets/transaction_row.dart';
+
+import 'package:flutter/material.dart';
 
 enum _FlowFilter { all, income, expenses }
 
@@ -85,14 +86,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     final groups = _grouped;
 
     return CupertinoPageScaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: colors.surface,
       child: CustomScrollView(
         slivers: [
           CupertinoSliverNavigationBar(
-            backgroundColor: AppColors.paper,
+            backgroundColor: colors.surface,
             border: null,
             largeTitle: const Text('Transactions'),
           ),
@@ -105,19 +109,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   CupertinoSearchTextField(
                     controller: _searchController,
                     placeholder: 'Search description or category',
-                    style: AppType.body,
+                    style: theme.textTheme.bodyMedium,
                     backgroundColor: CupertinoColors.white,
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 12),
                   CupertinoSlidingSegmentedControl<_FlowFilter>(
-                    backgroundColor: AppColors.paperDim,
+                    backgroundColor: colors.surfaceContainerHigh,
                     thumbColor: CupertinoColors.white,
                     groupValue: _filter,
                     children: {
-                      _FlowFilter.all: _segmentLabel('All'),
-                      _FlowFilter.income: _segmentLabel('Income'),
-                      _FlowFilter.expenses: _segmentLabel('Expenses'),
+                      _FlowFilter.all: _segmentLabel(context, 'All'),
+                      _FlowFilter.income: _segmentLabel(context,'Income'),
+                      _FlowFilter.expenses: _segmentLabel(context, 'Expenses'),
                     },
                     onValueChanged: (value) {
                       if (value != null) setState(() => _filter = value);
@@ -139,7 +143,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
-                      child: Text(entry.key, style: AppType.label),
+                      child: Text(entry.key, style: theme.textTheme.labelMedium),
                     ),
                   ),
                   SliverToBoxAdapter(
@@ -149,7 +153,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         decoration: BoxDecoration(
                           color: CupertinoColors.white,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.hairline),
+                          border: Border.all(color: colors.outlineVariant),
                         ),
                         child: Column(
                           children: [
@@ -164,7 +168,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                 );
                               }),
                               if (i != entry.value.length - 1)
-                                const LedgerDivider(indent: 56),
+                                const Divider(indent: 56),
                             ],
                           ],
                         ),
@@ -179,10 +183,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-  Widget _segmentLabel(String text) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Text(text, style: AppType.body.copyWith(fontSize: 13)),
-      );
+Widget _segmentLabel(BuildContext context, String text) {
+  final theme = Theme.of(context);
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Text(
+      text,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        fontSize: 13,
+      ),
+    ),
+  );
+}
 }
 
 class _EmptyState extends StatelessWidget {
@@ -191,18 +204,21 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(CupertinoIcons.doc_text_search,
-                size: 32, color: AppColors.slateLight),
+            Icon(CupertinoIcons.doc_text_search,
+                size: 32, color: colors.outline),
             const SizedBox(height: 12),
             Text(
               hasQuery ? 'No matching transactions' : 'No transactions yet',
-              style: AppType.body.copyWith(fontWeight: FontWeight.w500),
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
@@ -210,7 +226,7 @@ class _EmptyState extends StatelessWidget {
               hasQuery
                   ? 'Try a different search or filter.'
                   : 'Transactions you add will show up here.',
-              style: AppType.caption,
+              style: theme.textTheme.bodySmall,
               textAlign: TextAlign.center,
             ),
           ],

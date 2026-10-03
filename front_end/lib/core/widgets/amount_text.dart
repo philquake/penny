@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-
-import '../theme/app_colors.dart';
 import '../theme/theme_x.dart';
 
 class AmountText extends StatelessWidget {
@@ -8,7 +6,7 @@ class AmountText extends StatelessWidget {
   final double size;
   final FontWeight weight;
   final bool colorBySign;
-  final String prefix;
+  final String currencySymbol;
 
   const AmountText(
     this.value, {
@@ -16,15 +14,15 @@ class AmountText extends StatelessWidget {
     this.size = 16,
     this.weight = FontWeight.w600,
     this.colorBySign = true,
-    this.prefix = '\$',
+    this.currencySymbol = r'$',
   });
 
   @override
   Widget build(BuildContext context) {
-    final parsed = double.tryParse(value) ?? 0;
-    final isNegative = parsed < 0;
+    final amount = double.tryParse(value) ?? 0;
+    final isNegative = amount < 0;
     final display =
-        '${isNegative ? '-' : ''}$prefix${parsed.abs().toStringAsFixed(2)}';
+        '${isNegative ? '-' : ''}$currencySymbol${amount.abs().toStringAsFixed(2)}';
 
     final finance = context.finance;
     final color = colorBySign

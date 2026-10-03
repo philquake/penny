@@ -4,8 +4,11 @@ import '../models/budget_entry.dart';
 import '../models/category.dart';
 import '../models/transaction_type.dart';
 import '../models/transactions.dart';
-import '../theme/app_theme.dart';
+import '../core/theme/app_colors.dart';
+import '../core/widgets/amount_text.dart';
 import '../widgets/transaction_row.dart';
+import 'package:flutter/material.dart';
+
 
 /// Dashboard / Home screen — the first thing a user sees after signing in.
 /// Ledger-style: a running balance up top, this month's flow beneath it,
@@ -85,23 +88,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return match.isNotEmpty ? match.first : null;
   }
 
-  Widget _segmentLabel(String text) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Text(text, style: AppType.body.copyWith(fontSize: 13)),
-      );
+Widget _segmentLabel(BuildContext context, String text) {
+  final theme = Theme.of(context);
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Text(text,
+      style: theme.textTheme.displayMedium?.copyWith(
+        fontSize: 13,
+      ),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final recent = _recent;
 
     return CupertinoPageScaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: colors.surface,
       child: Stack(
         children: [
           CustomScrollView(
             slivers: [
               CupertinoSliverNavigationBar(
-                backgroundColor: AppColors.paper,
+                backgroundColor: colors.surface,
                 border: null,
                 largeTitle: const Text('Overview'),
               ),
@@ -109,12 +122,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
                   child: CupertinoSlidingSegmentedControl<_DashboardView>(
-                    backgroundColor: AppColors.paperDim,
+                    backgroundColor: colors.surfaceContainerHigh,
                     thumbColor: CupertinoColors.white,
                     groupValue: _selectedView,
                     children: {
-                      _DashboardView.overview: _segmentLabel('Overview'),
-                      _DashboardView.expenses: _segmentLabel('Expenses'),
+                      _DashboardView.overview: _segmentLabel(context, 'Overview'),
+                      _DashboardView.expenses: _segmentLabel(context, 'Expenses'),
                     },
                     onValueChanged: (value) {
                       if (value != null) {
@@ -153,20 +166,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             decoration: BoxDecoration(
                               color: CupertinoColors.white,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: AppColors.hairline),
+                              border: Border.all(color: colors.outlineVariant),
                             ),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   CupertinoIcons.chart_bar,
-                                  color: AppColors.slate,
+                                  color: colors.onSurfaceVariant,
                                   size: 20,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     'No budgets set yet',
-                                    style: AppType.body.copyWith(fontSize: 14),
+                                    style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14),
                                   ),
                                 ),
                                 CupertinoButton(
@@ -177,8 +190,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   onPressed: widget.onViewBudgets,
                                   child: Text(
                                     'Create budget',
-                                    style: AppType.label.copyWith(
-                                      color: AppColors.copper,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: colors.primary,
                                     ),
                                   ),
                                 ),
@@ -210,7 +223,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             child: Center(
                               child: Text(
                                 'No transactions yet',
-                                style: AppType.caption,
+                                style: theme.textTheme.bodySmall,
                               ),
                             ),
                           )
@@ -219,7 +232,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             decoration: BoxDecoration(
                               color: CupertinoColors.white,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.hairline),
+                              border: Border.all(color: colors.outlineVariant),
                             ),
                             child: Column(
                               children: [
@@ -239,7 +252,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     },
                                   ),
                                   if (i != recent.length - 1)
-                                    const LedgerDivider(indent: 56),
+                                    const Divider(indent: 56),
                                 ],
                               ],
                             ),
@@ -269,7 +282,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.all(12),
               minimumSize: const Size(56, 56),
               borderRadius: BorderRadius.circular(28),
-              color: AppColors.copper,
+              color: colors.primary,
               onPressed: widget.onAddTransaction,
               child: const Icon(
                 CupertinoIcons.add,
@@ -330,6 +343,9 @@ class _ExpensesListState extends State<_ExpensesList> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     final rows = _filtered;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -337,27 +353,27 @@ class _ExpensesListState extends State<_ExpensesList> {
         CupertinoSearchTextField(
           controller: _searchController,
           placeholder: 'Search description or category',
-          style: AppType.body,
+          style: theme.textTheme.bodyMedium,
           backgroundColor: CupertinoColors.white,
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 12),
         CupertinoSlidingSegmentedControl<_FlowFilter>(
-          backgroundColor: AppColors.paperDim,
+          backgroundColor: colors.surfaceContainerHigh,
           thumbColor: CupertinoColors.white,
           groupValue: _filter,
           children: {
             _FlowFilter.all: Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Text('All', style: AppType.body.copyWith(fontSize: 13)),
+              child: Text('All', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
             ),
             _FlowFilter.income: Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Text('Income', style: AppType.body.copyWith(fontSize: 13)),
+              child: Text('Income', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
             ),
             _FlowFilter.expenses: Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Text('Expenses', style: AppType.body.copyWith(fontSize: 13)),
+              child: Text('Expenses', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
             ),
           },
           onValueChanged: (value) {
@@ -373,7 +389,7 @@ class _ExpensesListState extends State<_ExpensesList> {
                 _searchController.text.isEmpty
                     ? 'No transactions yet'
                     : 'No matching transactions',
-                style: AppType.caption,
+                style: theme.textTheme.bodySmall,
               ),
             ),
           )
@@ -382,7 +398,7 @@ class _ExpensesListState extends State<_ExpensesList> {
             decoration: BoxDecoration(
               color: CupertinoColors.white,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.hairline),
+              border: Border.all(color: colors.outlineVariant),
             ),
             child: Column(
               children: [
@@ -396,7 +412,7 @@ class _ExpensesListState extends State<_ExpensesList> {
                     );
                   }),
                   if (i != rows.length - 1)
-                    const LedgerDivider(indent: 56),
+                    const Divider(indent: 56),
                 ],
               ],
             ),
@@ -505,6 +521,8 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
         DateTime(_displayedMonth.year, _displayedMonth.month).weekday - 1;
     final cellCount = ((leadingDays + daysInMonth + 6) ~/ 7) * 7;
     final dailyExpenses = _dailyExpenses;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,22 +532,24 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
             Expanded(
               child: Text(
                 'Daily spending',
-                style: AppType.title.copyWith(fontSize: 17),
+                style: theme.textTheme.titleLarge?.copyWith(
+                fontSize: 17,
+                ),
               ),
             ),
             CupertinoButton(
               padding: EdgeInsets.zero,
               minimumSize: const Size(32, 32),
               onPressed: () => _changeMonth(-1),
-              child: const Icon(
+              child: Icon(
                 CupertinoIcons.chevron_left,
                 size: 17,
-                color: AppColors.slate,
+                color: colors.onSurfaceVariant,
               ),
             ),
             Text(
               '${_monthNames[_displayedMonth.month - 1]} ${_displayedMonth.year}',
-              style: AppType.label,
+              style: theme.textTheme.labelMedium,
             ),
             CupertinoButton(
               padding: EdgeInsets.zero,
@@ -539,16 +559,16 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
                       _displayedMonth.month == DateTime.now().month
                   ? null
                   : () => _changeMonth(1),
-              child: const Icon(
+              child: Icon(
                 CupertinoIcons.chevron_right,
                 size: 17,
-                color: AppColors.slate,
+                color: colors.onSurfaceVariant,
               ),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        const LedgerDivider(),
+        const Divider(),
         const SizedBox(height: 10),
         Row(
           children: [
@@ -557,7 +577,9 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
                 child: Center(
                   child: Text(
                     weekday,
-                    style: AppType.caption.copyWith(fontSize: 10),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    ),
                   ),
                 ),
               ),
@@ -602,25 +624,26 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.paperDim : null,
+                    color: isSelected ? colors.surfaceContainerHighest : null,
                     borderRadius: BorderRadius.circular(6),
                     border: isToday && !isSelected
-                        ? Border.all(color: AppColors.hairline)
+                        ? Border.all(color: colors.outlineVariant,)
                         : null,
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('$day', style: AppType.body.copyWith(fontSize: 12)),
+                      Text('$day', style: theme.textTheme.bodyMedium?.copyWith(
+                        fontSize: 12,)),
                       if (total > 0)
                         Text(
                           _compactAmount(total),
                           maxLines: 1,
                           overflow: TextOverflow.clip,
-                          style: AppType.amount(
-                            size: 8,
-                            weight: FontWeight.w500,
-                            color: AppColors.rust,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w500,
+                            color: colors.error,
                           ),
                         ),
                     ],
@@ -631,19 +654,18 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
           },
         ),
         const SizedBox(height: 8),
-        const LedgerDivider(),
+        const Divider(),
         const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
               child: Text(
                 'Spent on ${_monthNames[_selectedDate.month - 1]} ${_selectedDate.day}',
-                style: AppType.caption,
+                style: theme.textTheme.bodySmall,
               ),
             ),
             AmountText(
               _selectedTotal.toStringAsFixed(2),
-              size: 15,
               colorBySign: false,
             ),
           ],
@@ -666,10 +688,13 @@ class _BalanceBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final financeColors = Theme.of(context).extension<FinanceColors>()!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Total balance', style: AppType.label),
+        Text('Total balance', style: theme.textTheme.labelMedium),
         const SizedBox(height: 4),
         AmountText(
           balance.toStringAsFixed(2),
@@ -685,18 +710,18 @@ class _BalanceBlock extends StatelessWidget {
                 label: 'In this month',
                 value: income,
                 icon: CupertinoIcons.arrow_down_left,
-                color: AppColors.ledgerGreen,
+                color: financeColors.income,
               ),
             ),
             const SizedBox(width: 12),
-            Container(width: 1, height: 34, color: AppColors.hairline),
+            Container(width: 1, height: 34, color:colors.outlineVariant),
             const SizedBox(width: 12),
             Expanded(
               child: _FlowStat(
                 label: 'Out this month',
                 value: expenses,
                 icon: CupertinoIcons.arrow_up_right,
-                color: AppColors.rust,
+                color: financeColors.expense,
               ),
             ),
           ],
@@ -721,6 +746,7 @@ class _FlowStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -728,7 +754,7 @@ class _FlowStat extends StatelessWidget {
           children: [
             Icon(icon, size: 13, color: color),
             const SizedBox(width: 4),
-            Text(label, style: AppType.caption),
+            Text(label, style: theme.textTheme.bodySmall),
           ],
         ),
         const SizedBox(height: 4),
@@ -756,17 +782,19 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: AppType.title.copyWith(fontSize: 17)),
+        Text(title, style: theme.textTheme.titleLarge?.copyWith(fontSize: 17)),
         CupertinoButton(
           padding: EdgeInsets.zero,
           minimumSize: Size.zero,
           onPressed: onAction,
           child: Text(
             actionLabel,
-            style: AppType.body.copyWith(color: AppColors.copper, fontSize: 13),
+            style: theme.textTheme.bodyMedium?.copyWith(color: colors.primary, fontSize: 13),
           ),
         ),
       ],
@@ -780,11 +808,13 @@ class _BudgetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final spent = double.tryParse(entry.status.spentAmount) ?? 0;
     final limit = double.tryParse(entry.budget.amount) ?? 1;
     final fraction = limit > 0 ? (spent / limit).clamp(0, 1.4) : 0.0;
     final isOver = entry.status.status == 'exceeded';
-    final barColor = isOver ? AppColors.rust : AppColors.copper;
+    final barColor = isOver ? colors.error : colors.primary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -794,14 +824,14 @@ class _BudgetRow extends StatelessWidget {
           children: [
             Text(
               entry.category.name,
-              style: AppType.body.copyWith(fontSize: 14),
+              style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14),
             ),
             Text(
               '\$${spent.toStringAsFixed(0)} of \$${limit.toStringAsFixed(0)}',
-              style: AppType.amount(
-                size: 13,
-                weight: FontWeight.w500,
-                color: isOver ? AppColors.rust : AppColors.slate,
+              style: theme.textTheme.displaySmall?.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: isOver ? colors.error : colors.onSurfaceVariant,
               ),
             ),
           ],
@@ -813,7 +843,7 @@ class _BudgetRow extends StatelessWidget {
             builder: (context, constraints) {
               return Stack(
                 children: [
-                  Container(height: 5, color: AppColors.hairline),
+                  Container(height: 5, color: colors.outlineVariant),
                   Container(
                     height: 5,
                     width: constraints.maxWidth * fraction,

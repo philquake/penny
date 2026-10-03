@@ -1,12 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/material.dart';
 
 import '../models/category.dart';
 import '../models/transaction_type.dart';
 import '../models/transactions.dart';
 import '../services/receipt_parser.dart';
-import '../theme/app_theme.dart';
+import '../core/theme/app_colors.dart';
 import '../widgets/transaction_row.dart' show categoryIcon;
 
 /// Add/Edit Transaction screen.
@@ -203,10 +204,13 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     final options = _categoriesForType;
     if (options.isEmpty) return;
 
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     final picked = await showCupertinoModalPopup<Category>(
       context: context,
       builder: (context) => CupertinoActionSheet(
-        title: Text('Category', style: AppType.label),
+        title: Text('Category', style: theme.textTheme.labelLarge),
         actions: [
           for (final category in options)
             CupertinoActionSheetAction(
@@ -215,13 +219,13 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(categoryIcon(category.icon),
-                      size: 18, color: AppColors.copperDark),
+                      size: 18, color: colors.onPrimaryContainer),
                   const SizedBox(width: 8),
-                  Text(category.name, style: AppType.body),
+                  Text(category.name, style: theme.textTheme.bodyMedium),
                   if (_category?.id == category.id) ...[
                     const SizedBox(width: 8),
-                    const Icon(CupertinoIcons.check_mark,
-                        size: 16, color: AppColors.copper),
+                    Icon(CupertinoIcons.check_mark,
+                        size: 16, color: colors.primary),
                   ],
                 ],
               ),
@@ -239,11 +243,15 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   }
 
   Future<void> _pickDate() async {
+
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     await showCupertinoModalPopup(
       context: context,
       builder: (context) => Container(
         height: 300,
-        color: AppColors.paper,
+        color: colors.surface,
         child: SafeArea(
           top: false,
           child: Column(
@@ -358,10 +366,13 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return CupertinoPageScaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: colors.surface,
       navigationBar: CupertinoNavigationBar(
-        backgroundColor: AppColors.paper,
+        backgroundColor: colors.surface,
         border: null,
         middle: Text(widget.isEditing ? 'Edit Transaction' : 'Add Transaction'),
         leading: CupertinoButton(
@@ -375,7 +386,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
           child: Text(
             'Save',
             style: TextStyle(
-              color: _canSave ? AppColors.copper : AppColors.slateLight,
+              color: _canSave ? colors.primary : colors.primary, //might need a different color on the second one
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -399,37 +410,37 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                 onTap: _pickCategory,
                 child: _category == null
                     ? Text('Select category',
-                        style: AppType.body.copyWith(color: AppColors.slateLight))
+                        style: theme.textTheme.bodyMedium?.copyWith(color: colors.outline))
                     : Row(
                         children: [
                           Icon(categoryIcon(_category!.icon),
-                              size: 16, color: AppColors.copperDark),
+                              size: 16, color: colors.primary),
                           const SizedBox(width: 8),
-                          Text(_category!.name, style: AppType.body),
+                          Text(_category!.name, style: theme.textTheme.bodyMedium),
                         ],
                       ),
               ),
-              const LedgerDivider(),
+              const Divider(),
               _FieldRow(
                 label: 'Date',
                 onTap: _pickDate,
                 child: Text(
                   '${_monthAbbr[_date.month - 1]} ${_date.day}, ${_date.year}',
-                  style: AppType.body,
+                  style: theme.textTheme.bodyMedium,
                 ),
               ),
-              const LedgerDivider(),
+              const Divider(),
               _FieldRow(
                 label: 'Receipt',
                 onTap: _scanReceipt,
                 child: Text(
                   _isScanning ? 'Scanning…' : 'Scan receipt',
-                  style: AppType.body.copyWith(
-                    color: _isScanning ? AppColors.slate : AppColors.copper,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: _isScanning ? colors.onSurfaceVariant : colors.primary,
                   ),
                 ),
               ),
-              const LedgerDivider(),
+              const Divider(),
               _FieldRow(
                 label: 'Description',
                 child: CupertinoTextField(
@@ -437,9 +448,9 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                   placeholder: 'Optional note',
                   padding: EdgeInsets.zero,
                   decoration: const BoxDecoration(),
-                  style: AppType.body,
+                  style: theme.textTheme.bodyMedium,
                   placeholderStyle:
-                      AppType.body.copyWith(color: AppColors.slateLight),
+                      theme.textTheme.bodyMedium?.copyWith(color: colors.outline),
                 ),
               ),
               if (widget.isEditing && widget.onDelete != null) ...[
@@ -448,13 +459,13 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                   height: 46,
                   child: CupertinoButton(
                     padding: EdgeInsets.zero,
-                    color: AppColors.rust.withValues(alpha: 0.08),
+                    color: colors.errorContainer,
                     borderRadius: BorderRadius.circular(8),
                     onPressed: _handleDelete,
                     child: Text(
                       'Delete Transaction',
-                      style: AppType.body.copyWith(
-                        color: AppColors.rust,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colors.error,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -477,13 +488,16 @@ class _TypeToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return CupertinoSlidingSegmentedControl<TransactionType>(
-      backgroundColor: AppColors.paperDim,
+      backgroundColor: colors.surfaceContainerHigh,
       thumbColor: CupertinoColors.white,
       groupValue: type,
       children: {
-        TransactionType.expense: _label('Expense'),
-        TransactionType.income: _label('Income'),
+        TransactionType.expense: _label(theme.textTheme.bodyMedium, 'Expense'),
+        TransactionType.income: _label(theme.textTheme.bodyMedium, 'Income'),
       },
       onValueChanged: (value) {
         if (value != null) onChanged(value);
@@ -491,9 +505,9 @@ class _TypeToggle extends StatelessWidget {
     );
   }
 
-  Widget _label(String text) => Padding(
+  Widget _label(TextStyle? style, String text) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(text, style: AppType.body.copyWith(fontSize: 14)),
+        child: Text(text, style: style?.copyWith(fontSize: 14)),
       );
 }
 
@@ -505,8 +519,12 @@ class _AmountField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final financeColors = Theme.of(context).extension<FinanceColors>()!;
+    
     final color =
-        type == TransactionType.income ? AppColors.ledgerGreen : AppColors.rust;
+        type == TransactionType.income ? financeColors.income : colors.error;
     return IntrinsicWidth(
       child: CupertinoTextField(
         controller: controller,
@@ -514,11 +532,11 @@ class _AmountField extends StatelessWidget {
         textAlign: TextAlign.center,
         prefix: Padding(
           padding: const EdgeInsets.only(left: 4),
-          child: Text('\$', style: AppType.amount(size: 34, color: color)),
+          child: Text('\$', style: theme.textTheme.displaySmall?.copyWith(color: color)),
         ),
         placeholder: '0.00',
-        placeholderStyle: AppType.amount(size: 34, color: AppColors.slateLight),
-        style: AppType.amount(size: 34, weight: FontWeight.w600, color: color),
+        placeholderStyle: theme.textTheme.displaySmall?.copyWith(color: colors.outline),
+        style: theme.textTheme.displaySmall?.copyWith(color: color),
         decoration: const BoxDecoration(),
         padding: EdgeInsets.zero,
       ),
@@ -535,18 +553,21 @@ class _FieldRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     final row = Padding(
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         children: [
           SizedBox(
             width: 100,
-            child: Text(label, style: AppType.label),
+            child: Text(label, style: theme.textTheme.labelMedium),
           ),
           Expanded(child: child),
           if (onTap != null)
-            const Icon(CupertinoIcons.chevron_right,
-                size: 15, color: AppColors.slateLight),
+            Icon(CupertinoIcons.chevron_right,
+                size: 15, color: colors.outline),
         ],
       ),
     );

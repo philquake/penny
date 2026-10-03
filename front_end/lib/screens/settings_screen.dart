@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import '../models/user.dart';
 import '../services/budget_notification_service.dart';
-import '../theme/app_theme.dart';
+import 'package:flutter/material.dart';
 
 /// Settings screen.
 ///
@@ -118,12 +118,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return CupertinoPageScaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: colors.surface,
       child: CustomScrollView(
         slivers: [
           CupertinoSliverNavigationBar(
-            backgroundColor: AppColors.paper,
+            backgroundColor: colors.surface,
             border: null,
             largeTitle: const Text('Settings'),
           ),
@@ -137,7 +140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Member since ${_monthNames[widget.user.createdAt.month - 1]} ${widget.user.createdAt.year}',
-                    style: AppType.caption,
+                    style: theme.textTheme.bodySmall,
                   ),
                   const SizedBox(height: 28),
                   _SectionLabel('Server'),
@@ -168,28 +171,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     decoration: BoxDecoration(
                       color: CupertinoColors.white,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.hairline),
+                      border: Border.all(color: colors.outlineVariant),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           CupertinoIcons.bell,
                           size: 18,
-                          color: AppColors.copperDark,
+                          color: colors.primary,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Budget notifications', style: AppType.body.copyWith(fontSize: 14)),
-                              Text('Notify when a budget threshold is reached', style: AppType.caption),
+                              Text('Budget notifications', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14)),
+                              Text('Notify when a budget threshold is reached', style: theme.textTheme.bodySmall),
                             ],
                           ),
                         ),
                         CupertinoSwitch(
                           value: _notificationsEnabled,
-                          activeTrackColor: AppColors.copper,
+                          activeTrackColor: colors.primary,
                           onChanged: _notificationsLoading
                               ? null
                               : _setNotificationsEnabled,
@@ -238,7 +241,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text(
                       'Penny runs on your own hardware.\nNo accounts, no cloud, no per-query costs.',
-                      style: AppType.caption,
+                      style: theme.textTheme.bodySmall,
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -247,13 +250,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     width: double.infinity,
                     child: CupertinoButton(
                       padding: EdgeInsets.zero,
-                      color: AppColors.rust.withValues(alpha: 0.08),
+                      color: colors.errorContainer.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                       onPressed: () => _confirmSignOut(context),
                       child: Text(
                         'Sign Out',
-                        style: AppType.body.copyWith(
-                          color: AppColors.rust,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.error,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -282,12 +285,15 @@ class _ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: CupertinoColors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.hairline),
+        border: Border.all(color: colors.outlineVariant),
       ),
       child: Row(
         children: [
@@ -295,15 +301,15 @@ class _ProfileCard extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: AppColors.copper,
+              color: colors.primary,
               borderRadius: BorderRadius.circular(14),
             ),
             alignment: Alignment.center,
             child: Text(
               initials,
-              style: AppType.amount(
-                size: 18,
-                weight: FontWeight.w600,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
                 color: CupertinoColors.white,
               ),
             ),
@@ -314,10 +320,10 @@ class _ProfileCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(fullName,
-                    style: AppType.body.copyWith(
+                    style: theme.textTheme.bodyMedium?.copyWith(
                         fontSize: 16, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
-                Text(email, style: AppType.caption),
+                Text(email, style: theme.textTheme.bodySmall),
               ],
             ),
           ),
@@ -333,10 +339,12 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, left: 4),
       child: Text(text.toUpperCase(),
-          style: AppType.caption.copyWith(letterSpacing: 0.4)),
+          style: theme.textTheme.bodySmall?.copyWith(letterSpacing: 0.4)),
     );
   }
 }
@@ -347,17 +355,20 @@ class _SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return Container(
       decoration: BoxDecoration(
         color: CupertinoColors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.hairline),
+        border: Border.all(color: colors.outlineVariant),
       ),
       child: Column(
         children: [
           for (int i = 0; i < rows.length; i++) ...[
             rows[i],
-            if (i != rows.length - 1) const LedgerDivider(indent: 48),
+            if (i != rows.length - 1) const Divider(indent: 48),
           ],
         ],
       ),
@@ -384,33 +395,36 @@ class _SettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     final content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       child: Row(
         children: [
           Icon(icon,
               size: 18,
-              color: enabled ? AppColors.copperDark : AppColors.slateLight),
+              color: enabled ? colors.primary : colors.outline),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               label,
-              style: AppType.body.copyWith(
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontSize: 14,
-                color: enabled ? AppColors.ink : AppColors.slateLight,
+                color: enabled ? colors.onSurface : colors.outline,
               ),
             ),
           ),
           if (value != null) ...[
-            Text(value!, style: AppType.caption),
+            Text(value!, style: theme.textTheme.bodySmall),
             const SizedBox(width: 6),
           ],
           if (trailingText != null)
-            Text(trailingText!, style: AppType.caption),
+            Text(trailingText!, style: theme.textTheme.bodySmall),
           if (enabled && onTap != null) ...[
             const SizedBox(width: 6),
-            const Icon(CupertinoIcons.chevron_right,
-                size: 14, color: AppColors.slateLight),
+            Icon(CupertinoIcons.chevron_right,
+                size: 14, color: colors.outline),
           ],
         ],
       ),

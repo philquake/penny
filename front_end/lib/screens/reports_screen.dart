@@ -1,34 +1,30 @@
-import 'package:flutter/cupertino.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+
+import '../core/theme/app_colors.dart'; 
 import '../models/category.dart';
 import '../models/transaction_type.dart';
 import '../models/transactions.dart';
-import '../theme/app_theme.dart';
+import '../core/widgets/amount_text.dart';
 
 enum _ReportRange { month, quarter, year }
 
-/// A small, desaturated palette used only for multi-category chart slices.
-/// Kept separate from AppColors (which stays a single-accent system) —
-/// a breakdown chart genuinely needs several distinguishable hues, but
-/// they're chosen to sit in the same muted/warm family as the rest of Penny
-/// rather than defaulting to a bright rainbow.
-const _chartPalette = [
-  AppColors.copper,
-  AppColors.ledgerGreen,
-  Color(0xFF7A6A9C), // dusty plum
-  Color(0xFFB99A3E), // muted ochre
-  Color(0xFF4A7A8C), // dusty teal
-  AppColors.rust,
-  Color(0xFF8C6F52), // warm taupe
-];
 
-/// Reports screen — spending composition and an income/expense trend.
-///
-/// Takes the raw [transactions]/[categories] lists and aggregates them
-/// client-side. There's no /reports endpoint on the backend yet (Phase 3
-/// per the build plan), and for a self-hosted household of ~5 users,
-/// client-side aggregation is cheap enough that it may never need to move
-/// server-side — keeps with the zero-marginal-cost philosophy.
+
+/// Multi-category chart palette. Was a `const` list, but theme colors are
+/// runtime values, so it's now a function. The fixed hues stay muted/warm.
+List<Color> _chartPalette(ColorScheme colors, FinanceColors finance) => [
+      colors.primary,
+      finance.income,
+      const Color(0xFF7A6A9C), // dusty plum
+      const Color(0xFFB99A3E), // muted ochre
+      const Color(0xFF4A7A8C), // dusty teal
+      finance.expense,
+      const Color(0xFF8C6F52), // warm taupe
+    ];
+
+/// Reports screen: spending composition and an income/expense trend.
+/// Aggregates client-side (no /reports consumption yet).
 class ReportsScreen extends StatefulWidget {
   final List<Transaction> transactions;
   final List<Category> categories;
@@ -46,7 +42,8 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   _ReportRange _range = _ReportRange.month;
 
-  static final _now = DateTime(2026, 9, 3); // matches conversation's current date
+  // Was a hardcoded DateTime(2026, 9, 3), which goes stale immediately.
+  DateTime get _now => DateTime.now();
 
   DateTime get _rangeStart {
     switch (_range) {
@@ -84,17 +81,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
     for (final t in _inRange.where((t) => t.type == TransactionType.expense)) {
       totals[t.categoryId] = (totals[t.categoryId] ?? 0) + _amount(t);
     }
-    final entries = totals.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    return entries;
+    return totals.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
   }
 
   /// Last 6 calendar months of income/expense totals, oldest first.
   List<_MonthTotal> get _monthlyTrend {
-    final months = List.generate(6, (i) {
-      final d = DateTime(_now.year, _now.month - (5 - i), 1);
-      return d;
-    });
+    final months = List.generate(
+      6,
+      (i) => DateTime(_now.year, _now.month - (5 - i), 1),
+    );
 
     return months.map((monthStart) {
       final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 1);
@@ -115,36 +110,42 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final finance = theme.extension<FinanceColors>()!;
+    final palette = _chartPalette(colors, finance);
+
     final breakdown = _expenseByCategory;
     final net = _totalIncome - _totalExpenses;
 
-    return CupertinoPageScaffold(
-      backgroundColor: AppColors.paper,
-      child: CustomScrollView(
+    return Scaffold(
+      body: CustomScrollView(
         slivers: [
-          CupertinoSliverNavigationBar(
-            backgroundColor: AppColors.paper,
-            border: null,
-            largeTitle: const Text('Reports'),
-          ),
+          const SliverAppBar.large(title: Text('Reports')),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CupertinoSlidingSegmentedControl<_ReportRange>(
-                    backgroundColor: AppColors.paperDim,
-                    thumbColor: CupertinoColors.white,
-                    groupValue: _range,
-                    children: {
-                      _ReportRange.month: _segmentLabel('This Month'),
-                      _ReportRange.quarter: _segmentLabel('3 Months'),
-                      _ReportRange.year: _segmentLabel('This Year'),
-                    },
-                    onValueChanged: (value) {
-                      if (value != null) setState(() => _range = value);
-                    },
+                  SegmentedButton<_ReportRange>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(
+                        value: _ReportRange.month,
+                        label: Text('This Month'),
+                      ),
+                      ButtonSegment(
+                        value: _ReportRange.quarter,
+                        label: Text('3 Months'),
+                      ),
+                      ButtonSegment(
+                        value: _ReportRange.year,
+                        label: Text('This Year'),
+                      ),
+                    ],
+                    selected: {_range},
+                    onSelectionChanged: (s) => setState(() => _range = s.first),
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -153,7 +154,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         child: _SummaryStat(
                           label: 'Income',
                           value: _totalIncome,
-                          color: AppColors.ledgerGreen,
+                          color: finance.income,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -161,7 +162,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         child: _SummaryStat(
                           label: 'Expenses',
                           value: _totalExpenses,
-                          color: AppColors.rust,
+                          color: finance.expense,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -169,21 +170,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         child: _SummaryStat(
                           label: 'Net',
                           value: net,
-                          color: net >= 0 ? AppColors.ledgerGreen : AppColors.rust,
+                          color: net >= 0 ? finance.income : finance.expense,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 32),
-                  Text('Spending by category',
-                      style: AppType.title.copyWith(fontSize: 17)),
+                  Text(
+                    'Spending by category',
+                    style: theme.textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 16),
                   if (breakdown.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 24),
                       child: Center(
-                        child: Text('No expenses in this period',
-                            style: AppType.caption),
+                        child: Text(
+                          'No expenses in this period',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
                       ),
                     )
                   else ...[
@@ -197,7 +204,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             for (int i = 0; i < breakdown.length; i++)
                               PieChartSectionData(
                                 value: breakdown[i].value,
-                                color: _chartPalette[i % _chartPalette.length],
+                                color: palette[i % palette.length],
                                 radius: 34,
                                 showTitle: false,
                               ),
@@ -208,9 +215,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     const SizedBox(height: 20),
                     Container(
                       decoration: BoxDecoration(
-                        color: CupertinoColors.white,
+                        color: colors.surface,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.hairline),
+                        border: Border.all(color: colors.outlineVariant),
                       ),
                       child: Column(
                         children: [
@@ -221,20 +228,31 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               percent: _totalExpenses > 0
                                   ? breakdown[i].value / _totalExpenses
                                   : 0,
-                              color: _chartPalette[i % _chartPalette.length],
+                              color: palette[i % palette.length],
                             ),
                             if (i != breakdown.length - 1)
-                              const LedgerDivider(indent: 40),
+                              Divider(
+                                height: 1,
+                                indent: 40,
+                                color: colors.outlineVariant,
+                              ),
                           ],
                         ],
                       ),
                     ),
                   ],
                   const SizedBox(height: 32),
-                  Text('Income vs. expenses',
-                      style: AppType.title.copyWith(fontSize: 17)),
+                  Text(
+                    'Income vs. expenses',
+                    style: theme.textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 4),
-                  Text('Last 6 months', style: AppType.caption),
+                  Text(
+                    'Last 6 months',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   SizedBox(
                     height: 180,
@@ -244,9 +262,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _LegendDot(color: AppColors.ledgerGreen, label: 'Income'),
+                      _LegendDot(color: finance.income, label: 'Income'),
                       const SizedBox(width: 20),
-                      _LegendDot(color: AppColors.rust, label: 'Expenses'),
+                      _LegendDot(color: finance.expense, label: 'Expenses'),
                     ],
                   ),
                 ],
@@ -257,11 +275,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       ),
     );
   }
-
-  Widget _segmentLabel(String text) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(text, style: AppType.body.copyWith(fontSize: 12)),
-      );
 }
 
 class _MonthTotal {
@@ -276,19 +289,31 @@ class _SummaryStat extends StatelessWidget {
   final double value;
   final Color color;
 
-  const _SummaryStat({required this.label, required this.value, required this.color});
+  const _SummaryStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppType.caption),
-        const SizedBox(height: 4),
         Text(
-          '\$${value.abs().toStringAsFixed(0)}',
-          style: AppType.amount(size: 18, weight: FontWeight.w600, color: color),
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
+        const SizedBox(height: 4),
+          AmountText(
+              value.abs().toStringAsFixed(2),
+              size: 18,
+              colorBySign: false, // uses colors.onSurface, which is what you wanted
+            ),
       ],
     );
   }
@@ -309,6 +334,9 @@ class _CategoryBreakdownRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       child: Row(
@@ -322,13 +350,21 @@ class _CategoryBreakdownRow extends StatelessWidget {
           Expanded(
             child: Text(
               category?.name ?? 'Uncategorized',
-              style: AppType.body.copyWith(fontSize: 14),
+              style: theme.textTheme.bodyMedium,
             ),
           ),
-          Text('${(percent * 100).round()}%',
-              style: AppType.caption.copyWith(fontSize: 12)),
+          Text(
+            '${(percent * 100).round()}%',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(width: 10),
-          AmountText(amount.toStringAsFixed(2), size: 13, colorBySign: false),
+          AmountText(
+            amount.toStringAsFixed(2),
+            size: 13,
+            colorBySign: false, // uses colors.onSurface, which is what you wanted
+          ),
         ],
       ),
     );
@@ -346,6 +382,12 @@ class _MonthlyTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final finance = theme.extension<FinanceColors>()!;
+    final labelStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+
     final maxVal = months.fold<double>(
       1,
       (max, m) => [max, m.income, m.expense].reduce((a, b) => a > b ? a : b),
@@ -370,7 +412,7 @@ class _MonthlyTrendChart extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
                     _monthAbbr[months[i].month.month - 1],
-                    style: AppType.caption,
+                    style: labelStyle,
                   ),
                 );
               },
@@ -381,21 +423,21 @@ class _MonthlyTrendChart extends StatelessWidget {
           for (int i = 0; i < months.length; i++)
             BarChartGroupData(
               x: i,
+              barsSpace: 4,
               barRods: [
                 BarChartRodData(
                   toY: months[i].income,
-                  color: AppColors.ledgerGreen,
+                  color: finance.income,
                   width: 7,
                   borderRadius: BorderRadius.circular(2),
                 ),
                 BarChartRodData(
                   toY: months[i].expense,
-                  color: AppColors.rust,
+                  color: finance.expense,
                   width: 7,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ],
-              barsSpace: 4,
             ),
         ],
       ),
@@ -410,6 +452,8 @@ class _LegendDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -419,7 +463,12 @@ class _LegendDot extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        Text(label, style: AppType.caption),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
       ],
     );
   }

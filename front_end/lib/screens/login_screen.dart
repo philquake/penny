@@ -1,16 +1,16 @@
-import 'package:flutter/cupertino.dart';
-import '../theme/app_theme.dart';
+import 'package:flutter/material.dart';
+import '../core/theme/app_colors.dart';
+
+
 
 /// Login screen for Penny.
 ///
 /// Penny is self-hosted for a small trusted group (~5 users), so this
 /// screen includes a collapsed "Server" field for pointing the app at a
-/// household's own instance — most users never touch it, but it's real
-/// functionality this app needs, not decoration.
+/// household's own instance.
 class LoginScreen extends StatefulWidget {
-  /// Returns an error message on failure, or null on success. The screen
-  /// doesn't navigate itself — the app root reacts to the session
-  /// provider's state changing and swaps to the authenticated shell.
+  /// Returns an error message on failure, or null on success. The app root
+  /// reacts to the session provider and swaps to the authenticated shell.
   final Future<String?> Function({
     required String email,
     required String password,
@@ -24,16 +24,10 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _serverController = TextEditingController(text: 'tailscale-host:8000');
-  // final _usernameController = TextEditingController();
-  // final _passwordController = TextEditingController();
-  final _usernameController = TextEditingController(
-  text: 'test@example.com',
-);
 
-final _passwordController = TextEditingController(
-  text: 'TestPassword123!',
-);
-  
+  // TODO: remove the prefilled dev credentials before sharing a build.
+  final _usernameController = TextEditingController(text: 'test@example.com');
+  final _passwordController = TextEditingController(text: 'TestPassword123!');
 
   bool _showServerField = false;
   bool _obscurePassword = true;
@@ -73,9 +67,11 @@ final _passwordController = TextEditingController(
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: AppColors.paper,
-      child: SafeArea(
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    return Scaffold(
+      body: SafeArea(
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
           behavior: HitTestBehavior.opaque,
@@ -90,12 +86,14 @@ final _passwordController = TextEditingController(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Spacer(flex: 3),
-                        _Wordmark(),
+                        const _Wordmark(),
                         const SizedBox(height: 6),
                         Text(
                           'Your ledger. Your server.',
                           textAlign: TextAlign.center,
-                          style: AppType.label,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
                         ),
                         const Spacer(flex: 3),
                         if (_errorText != null) ...[
@@ -107,7 +105,6 @@ final _passwordController = TextEditingController(
                           controller: _usernameController,
                           placeholder: 'phil',
                           keyboardType: TextInputType.text,
-                          textCapitalization: TextCapitalization.none,
                         ),
                         const SizedBox(height: 14),
                         _LedgerField(
@@ -115,38 +112,38 @@ final _passwordController = TextEditingController(
                           controller: _passwordController,
                           placeholder: '••••••••',
                           obscureText: _obscurePassword,
-                          suffix: CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
+                          suffix: IconButton(
+                            visualDensity: VisualDensity.compact,
                             onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword),
-                            child: Icon(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                            icon: Icon(
                               _obscurePassword
-                                  ? CupertinoIcons.eye
-                                  : CupertinoIcons.eye_slash,
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
                               size: 18,
-                              color: AppColors.slate,
+                              color: colors.onSurfaceVariant,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 18),
-                        CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          onPressed: () =>
-                              setState(() => _showServerField = !_showServerField),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _showServerField
-                                    ? CupertinoIcons.chevron_down
-                                    : CupertinoIcons.chevron_right,
-                                size: 12,
-                                color: AppColors.slate,
-                              ),
-                              const SizedBox(width: 6),
-                              Text('Server', style: AppType.label),
-                            ],
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () => setState(
+                              () => _showServerField = !_showServerField,
+                            ),
+                            icon: Icon(
+                              _showServerField
+                                  ? Icons.expand_more
+                                  : Icons.chevron_right,
+                              size: 16,
+                            ),
+                            label: const Text('Server'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: colors.onSurfaceVariant,
+                              padding: EdgeInsets.zero,
+                            ),
                           ),
                         ),
                         AnimatedCrossFade(
@@ -168,18 +165,26 @@ final _passwordController = TextEditingController(
                         const SizedBox(height: 26),
                         SizedBox(
                           height: 48,
-                          child: CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            color: AppColors.copper,
-                            borderRadius: BorderRadius.circular(8),
+                          child: FilledButton(
                             onPressed: _isSubmitting ? null : _handleSignIn,
+                            style: FilledButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
                             child: _isSubmitting
-                                ? const CupertinoActivityIndicator(
-                                    color: CupertinoColors.white)
+                                ? SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: colors.onPrimary,
+                                    ),
+                                  )
                                 : Text(
                                     'Sign In',
-                                    style: AppType.body.copyWith(
-                                      color: CupertinoColors.white,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: colors.onPrimary,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -187,9 +192,12 @@ final _passwordController = TextEditingController(
                         ),
                         const Spacer(flex: 4),
                         Text(
-                          'Penny runs on your own hardware.\nNo accounts, no cloud, no per-query costs.',
+                          'Penny runs on your own hardware.\n'
+                          'No accounts, no cloud, no per-query costs.',
                           textAlign: TextAlign.center,
-                          style: AppType.caption,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
                         ),
                         const SizedBox(height: 12),
                       ],
@@ -206,29 +214,42 @@ final _passwordController = TextEditingController(
 }
 
 class _Wordmark extends StatelessWidget {
+  const _Wordmark();
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+
     return Column(
       children: [
         Container(
           width: 52,
           height: 52,
           decoration: BoxDecoration(
-            color: AppColors.copper,
+            color: colors.primary,
             borderRadius: BorderRadius.circular(14),
           ),
           alignment: Alignment.center,
           child: Text(
             '1¢',
-            style: AppType.amount(
-              size: 20,
-              weight: FontWeight.w600,
-              color: CupertinoColors.white,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: colors.onPrimary,
             ),
           ),
         ),
         const SizedBox(height: 14),
-        Text('Penny', style: AppType.wordmark, textAlign: TextAlign.center),
+        Text(
+          'Penny',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.3,
+          ),
+        ),
       ],
     );
   }
@@ -240,7 +261,6 @@ class _LedgerField extends StatelessWidget {
   final String placeholder;
   final bool obscureText;
   final TextInputType? keyboardType;
-  final TextCapitalization textCapitalization;
   final Widget? suffix;
 
   const _LedgerField({
@@ -249,32 +269,47 @@ class _LedgerField extends StatelessWidget {
     required this.placeholder,
     this.obscureText = false,
     this.keyboardType,
-    this.textCapitalization = TextCapitalization.none,
     this.suffix,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+
+    OutlineInputBorder border(Color color, [double width = 1]) =>
+        OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: color, width: width),
+        );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppType.label),
+        Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(color: colors.onSurfaceVariant),
+        ),
         const SizedBox(height: 6),
-        CupertinoTextField(
+        TextField(
           controller: controller,
-          placeholder: placeholder,
           obscureText: obscureText,
           keyboardType: keyboardType,
-          textCapitalization: textCapitalization,
-          suffix: suffix,
-          suffixMode: OverlayVisibilityMode.always,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          style: AppType.body,
-          placeholderStyle: AppType.body.copyWith(color: AppColors.slateLight),
-          decoration: BoxDecoration(
-            color: CupertinoColors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.hairline),
+          textCapitalization: TextCapitalization.none,
+          autocorrect: false,
+          style: theme.textTheme.bodyMedium,
+          decoration: InputDecoration(
+            hintText: placeholder,
+            hintStyle: theme.textTheme.bodyMedium?.copyWith(color: colors.outline),
+            suffixIcon: suffix,
+            filled: true,
+            fillColor: colors.surface,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            enabledBorder: border(colors.outlineVariant),
+            focusedBorder: border(colors.primary, 1.5),
+            border: border(colors.outlineVariant),
           ),
         ),
       ],
@@ -288,22 +323,27 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final financeColors = Theme.of(context).extension<FinanceColors>()!;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.rust.withValues(alpha:0.08),
+        color: financeColors.expense.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.rust.withValues(alpha:0.25)),
+        border: Border.all(color: financeColors.expense.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
-          const Icon(CupertinoIcons.exclamationmark_circle,
-              size: 16, color: AppColors.rust),
+          Icon(Icons.error_outline, size: 16, color: financeColors.expense),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: AppType.body.copyWith(color: AppColors.rust, fontSize: 13),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: financeColors.expense,
+                fontSize: 13,
+              ),
             ),
           ),
         ],
