@@ -141,7 +141,7 @@ Widget _asyncBody<T>(
           padding:  EdgeInsets.all(24),
           child: Text(
             'Couldn\'t load data.\n$error',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: context.colors.error),
+            style: context.text.bodyMedium?.copyWith(color: context.colors.error),
             textAlign: TextAlign.center,
           ),
         ),

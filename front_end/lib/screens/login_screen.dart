@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_colors.dart';
+import '../core/theme/theme_x.dart';
 
 
 
@@ -9,7 +9,7 @@ import '../core/theme/app_colors.dart';
 /// screen includes a collapsed "Server" field for pointing the app at a
 /// household's own instance.
 class LoginScreen extends StatefulWidget {
-  /// Returns an error message on failure, or null on success. The app root
+  /// Returns an error message on failure, or null on sucess. The app root
   /// reacts to the session provider and swaps to the authenticated shell.
   final Future<String?> Function({
     required String email,
@@ -67,8 +67,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
 
     return Scaffold(
       body: SafeArea(
@@ -91,8 +89,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(
                           'Your ledger. Your server.',
                           textAlign: TextAlign.center,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: colors.onSurfaceVariant,
+                          style: context.text.labelMedium?.copyWith(
+                            color: context.colors.onSurfaceVariant,
                           ),
                         ),
                         const Spacer(flex: 3),
@@ -122,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ? Icons.visibility_outlined
                                   : Icons.visibility_off_outlined,
                               size: 18,
-                              color: colors.onSurfaceVariant,
+                              color: context.colors.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -141,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             label: const Text('Server'),
                             style: TextButton.styleFrom(
-                              foregroundColor: colors.onSurfaceVariant,
+                              foregroundColor: context.colors.onSurfaceVariant,
                               padding: EdgeInsets.zero,
                             ),
                           ),
@@ -178,13 +176,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                     height: 20,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: colors.onPrimary,
+                                      color: context.colors.onPrimary,
                                     ),
                                   )
                                 : Text(
                                     'Sign In',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: colors.onPrimary,
+                                    style: context.text.bodyMedium?.copyWith(
+                                      color: context.colors.onPrimary,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -193,10 +191,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         const Spacer(flex: 4),
                         Text(
                           'Penny runs on your own hardware.\n'
-                          'No accounts, no cloud, no per-query costs.',
+                          'No acounts, no cloud, no per-query costs.',
                           textAlign: TextAlign.center,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
+                          style: context.text.bodySmall?.copyWith(
+                            color: context.colors.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -218,8 +216,6 @@ class _Wordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
 
 
     return Column(
@@ -228,16 +224,16 @@ class _Wordmark extends StatelessWidget {
           width: 52,
           height: 52,
           decoration: BoxDecoration(
-            color: colors.primary,
+            color: context.colors.primary,
             borderRadius: BorderRadius.circular(14),
           ),
           alignment: Alignment.center,
           child: Text(
             '1¢',
-            style: theme.textTheme.titleMedium?.copyWith(
+            style: context.text.titleMedium?.copyWith(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: colors.onPrimary,
+              color: context.colors.onPrimary,
             ),
           ),
         ),
@@ -245,7 +241,7 @@ class _Wordmark extends StatelessWidget {
         Text(
           'Penny',
           textAlign: TextAlign.center,
-          style: theme.textTheme.headlineMedium?.copyWith(
+          style: context.text.headlineMedium?.copyWith(
             fontWeight: FontWeight.w600,
             letterSpacing: -0.3,
           ),
@@ -274,8 +270,6 @@ class _LedgerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
 
 
     OutlineInputBorder border(Color color, [double width = 1]) =>
@@ -289,7 +283,7 @@ class _LedgerField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: theme.textTheme.labelMedium?.copyWith(color: colors.onSurfaceVariant),
+          style: context.text.labelMedium?.copyWith(color: context.colors.onSurfaceVariant),
         ),
         const SizedBox(height: 6),
         TextField(
@@ -298,18 +292,18 @@ class _LedgerField extends StatelessWidget {
           keyboardType: keyboardType,
           textCapitalization: TextCapitalization.none,
           autocorrect: false,
-          style: theme.textTheme.bodyMedium,
+          style: context.text.bodyMedium,
           decoration: InputDecoration(
             hintText: placeholder,
-            hintStyle: theme.textTheme.bodyMedium?.copyWith(color: colors.outline),
+            hintStyle: context.text.bodyMedium?.copyWith(color: context.colors.outline),
             suffixIcon: suffix,
             filled: true,
-            fillColor: colors.surface,
+            fillColor: context.colors.surface,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            enabledBorder: border(colors.outlineVariant),
-            focusedBorder: border(colors.primary, 1.5),
-            border: border(colors.outlineVariant),
+            enabledBorder: border(context.colors.outlineVariant),
+            focusedBorder: border(context.colors.primary, 1.5),
+            border: border(context.colors.outlineVariant),
           ),
         ),
       ],
@@ -323,25 +317,23 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final financeColors = Theme.of(context).extension<FinanceColors>()!;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: financeColors.expense.withValues(alpha: 0.08),
+        color: context.finance.expense.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: financeColors.expense.withValues(alpha: 0.25)),
+        border: Border.all(color: context.finance.expense.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, size: 16, color: financeColors.expense),
+          Icon(Icons.error_outline, size: 16, color: context.finance.expense),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: financeColors.expense,
+              style: context.text.bodyMedium?.copyWith(
+                color: context.finance.expense,
                 fontSize: 13,
               ),
             ),

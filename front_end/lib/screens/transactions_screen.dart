@@ -3,6 +3,7 @@ import '../models/category.dart';
 import '../models/transaction_type.dart';
 import '../models/transactions.dart';
 import '../widgets/transaction_row.dart';
+import '../core/theme/theme_x.dart';
 
 import 'package:flutter/material.dart';
 
@@ -86,17 +87,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
 
     final groups = _grouped;
 
     return CupertinoPageScaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: context.colors.surface,
       child: CustomScrollView(
         slivers: [
           CupertinoSliverNavigationBar(
-            backgroundColor: colors.surface,
+            backgroundColor: context.colors.surface,
             border: null,
             largeTitle: const Text('Transactions'),
           ),
@@ -109,13 +108,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   CupertinoSearchTextField(
                     controller: _searchController,
                     placeholder: 'Search description or category',
-                    style: theme.textTheme.bodyMedium,
+                    style: context.text.bodyMedium,
                     backgroundColor: CupertinoColors.white,
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 12),
                   CupertinoSlidingSegmentedControl<_FlowFilter>(
-                    backgroundColor: colors.surfaceContainerHigh,
+                    backgroundColor: context.colors.surfaceContainerHigh,
                     thumbColor: CupertinoColors.white,
                     groupValue: _filter,
                     children: {
@@ -143,7 +142,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
-                      child: Text(entry.key, style: theme.textTheme.labelMedium),
+                      child: Text(entry.key, style: context.text.labelMedium),
                     ),
                   ),
                   SliverToBoxAdapter(
@@ -153,7 +152,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         decoration: BoxDecoration(
                           color: CupertinoColors.white,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: colors.outlineVariant),
+                          border: Border.all(color: context.colors.outlineVariant),
                         ),
                         child: Column(
                           children: [
@@ -184,13 +183,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
 Widget _segmentLabel(BuildContext context, String text) {
-  final theme = Theme.of(context);
 
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),
     child: Text(
       text,
-      style: theme.textTheme.bodyMedium?.copyWith(
+      style: context.text.bodyMedium?.copyWith(
         fontSize: 13,
       ),
     ),
@@ -204,8 +202,6 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
 
     return Center(
       child: Padding(
@@ -214,11 +210,11 @@ class _EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(CupertinoIcons.doc_text_search,
-                size: 32, color: colors.outline),
+                size: 32, color: context.colors.outline),
             const SizedBox(height: 12),
             Text(
               hasQuery ? 'No matching transactions' : 'No transactions yet',
-              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+              style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
@@ -226,7 +222,7 @@ class _EmptyState extends StatelessWidget {
               hasQuery
                   ? 'Try a different search or filter.'
                   : 'Transactions you add will show up here.',
-              style: theme.textTheme.bodySmall,
+              style: context.text.bodySmall,
               textAlign: TextAlign.center,
             ),
           ],

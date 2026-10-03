@@ -4,6 +4,8 @@ import '../models/transaction_type.dart';
 import '../widgets/transaction_row.dart' show categoryIcon;
 
 import 'package:flutter/material.dart';
+import '../core/theme/theme_x.dart';
+
 
 /// Categories screen — grouped by type (Expense/Income), the way budgets
 /// and the transaction filters both key off type already.
@@ -95,15 +97,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
 
     return CupertinoPageScaffold(
-      backgroundColor: colors.surface,
+      backgroundColor: context.colors.surface,
       child: CustomScrollView(
         slivers: [
           CupertinoSliverNavigationBar(
-            backgroundColor: colors.surface,
+            backgroundColor: context.colors.surface,
             border: null,
             largeTitle: const Text('Categories'),
             trailing: CupertinoButton(
@@ -112,7 +112,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               onPressed: _showAddCategorySheet,
               child: Icon(
                 CupertinoIcons.add_circled_solid,
-                color: colors.primary,
+                color: context.colors.primary,
                 size: 28,
               ),
             ),
@@ -157,25 +157,23 @@ class _CategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: theme.textTheme.titleLarge?.copyWith(fontSize: 17)),
+        Text(title, style: context.text.titleLarge?.copyWith(fontSize: 17)),
         const SizedBox(height: 8),
         if (categories.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text('No categories yet', style: theme.textTheme.bodySmall),
+            child: Text('No categories yet', style: context.text.bodySmall),
           )
         else
           Container(
             decoration: BoxDecoration(
               color: CupertinoColors.white,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: colors.outlineVariant),
+              border: Border.all(color: context.colors.outlineVariant),
             ),
             child: Column(
               children: [
@@ -202,8 +200,6 @@ class _CategoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -213,26 +209,26 @@ class _CategoryRow extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: colors.surfaceContainerHigh,
+              color: context.colors.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(8),
             ),
             alignment: Alignment.center,
             child: Icon(categoryIcon(category.icon),
-                size: 16, color: colors.primary),
+                size: 16, color: context.colors.primary),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(category.name, style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14)),
+            child: Text(category.name, style: context.text.bodyMedium?.copyWith(fontSize: 14)),
           ),
           if (category.isDefault)
-            Text('Default', style: theme.textTheme.bodySmall)
+            Text('Default', style: context.text.bodySmall)
           else
             CupertinoButton(
               padding: EdgeInsets.zero,
               minimumSize: Size.zero,
               onPressed: onDelete,
               child: Icon(CupertinoIcons.minus_circle,
-                  size: 20, color: colors.error),
+                  size: 20, color: context.colors.error),
             ),
         ],
       ),
@@ -274,15 +270,13 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
 
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       decoration: BoxDecoration(
-        color: colors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: SafeArea(
@@ -301,14 +295,14 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
                     onPressed: () => Navigator.of(context).pop(),
                     child: const Text('Cancel'),
                   ),
-                  Text('New Category', style: theme.textTheme.titleLarge?.copyWith(fontSize: 16)),
+                  Text('New Category', style: context.text.titleLarge?.copyWith(fontSize: 16)),
                   CupertinoButton(
                     padding: EdgeInsets.zero,
                     onPressed: _canSave ? _handleSave : null,
                     child: Text(
                       'Add',
                       style: TextStyle(
-                        color: _canSave ? colors.primary : colors.outline,
+                        color: _canSave ? context.colors.primary : context.colors.outline,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -316,27 +310,27 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
                 ],
               ),
               const SizedBox(height: 18),
-              Text('Name', style: theme.textTheme.labelMedium),
+              Text('Name', style: context.text.labelMedium),
               const SizedBox(height: 6),
               CupertinoTextField(
                 controller: _nameController,
                 placeholder: 'e.g. Pet Care',
                 autofocus: true,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                style: theme.textTheme.bodyMedium,
-                placeholderStyle: theme.textTheme.bodyMedium?.copyWith(color: colors.outline),
+                style: context.text.bodyMedium,
+                placeholderStyle: context.text.bodyMedium?.copyWith(color: context.colors.outline),
                 decoration: BoxDecoration(
                   color: CupertinoColors.white,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: colors.outlineVariant),
+                  border: Border.all(color: context.colors.outlineVariant),
                 ),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 18),
-              Text('Type', style: theme.textTheme.labelMedium),
+              Text('Type', style: context.text.labelMedium),
               const SizedBox(height: 6),
               CupertinoSlidingSegmentedControl<TransactionType>(
-                backgroundColor: colors.surfaceContainerHigh,
+                backgroundColor: context.colors.surfaceContainerHigh,
                 thumbColor: CupertinoColors.white,
                 groupValue: _type,
                 children: {
@@ -348,7 +342,7 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
                 },
               ),
               const SizedBox(height: 18),
-              Text('Icon', style: theme.textTheme.labelMedium),
+              Text('Icon', style: context.text.labelMedium),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -363,18 +357,18 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
                         height: 42,
                         decoration: BoxDecoration(
                           color: _icon == key
-                              ? colors.primary.withValues(alpha:0.15)
-                              : colors.surfaceContainerHigh,
+                              ? context.colors.primary.withValues(alpha:0.15)
+                              : context.colors.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: _icon == key
-                                ? colors.primary
+                                ? context.colors.primary
                                 : const Color(0x00000000),
                           ),
                         ),
                         alignment: Alignment.center,
                         child: Icon(categoryIcon(key),
-                            size: 18, color: colors.primary),
+                            size: 18, color: context.colors.primary),
                       ),
                     ),
                 ],
@@ -387,13 +381,12 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
   }
 
   Widget _segmentLabel(BuildContext context, String text) {
-  final theme = Theme.of(context);
 
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
     child: Text(
       text,
-      style: theme.textTheme.bodyMedium?.copyWith(
+      style: context.text.bodyMedium?.copyWith(
         fontSize: 14,
       ),
     ),

@@ -3,9 +3,7 @@ import '../models/category.dart';
 import '../models/transactions.dart';
 import '../models/transaction_type.dart';
 import '../core/widgets/amount_text.dart';
-import 'package:flutter/material.dart';
-
-
+import '../core/theme/theme_x.dart';
 
 
 const _monthAbbr = [
@@ -53,8 +51,6 @@ class TransactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
 
     final d = transaction.transactionDate;
     final dateLabel = '${_monthAbbr[d.month - 1]} ${d.day}';
@@ -81,14 +77,14 @@ class TransactionRow extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: colors.surfaceContainerHigh,
+                color: context.colors.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(8),
               ),
               alignment: Alignment.center,
               child: Icon(
                 categoryIcon(category.icon),
                 size: 16,
-                color: colors.primary,
+                color: context.colors.primary,
               ),
             ),
             const SizedBox(width: 12),
@@ -96,9 +92,9 @@ class TransactionRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: theme.textTheme.bodyMedium?.copyWith(fontSize: 14)),
+                  Text(title, style: context.text.bodyMedium?.copyWith(fontSize: 14)),
                   const SizedBox(height: 2),
-                  Text('${category.name} · $dateLabel', style: theme.textTheme.bodySmall),
+                  Text('${category.name} · $dateLabel', style: context.text.bodySmall),
                 ],
               ),
             ),

@@ -23,10 +23,8 @@ class AmountText extends StatelessWidget {
     final isNegative = amount < 0;
     final display =
         '${isNegative ? '-' : ''}$currencySymbol${amount.abs().toStringAsFixed(2)}';
-
-    final finance = context.finance;
     final color = colorBySign
-        ? (isNegative ? finance.expense : finance.income)
+        ? (isNegative ? context.finance.expense : context.finance.income)
         : context.colors.onSurface;
 
     return Text(

@@ -6,6 +6,7 @@ import '../models/category.dart';
 import '../models/transaction_type.dart';
 import '../models/transactions.dart';
 import '../core/widgets/amount_text.dart';
+import '../core/theme/theme_x.dart';
 
 enum _ReportRange { month, quarter, year }
 
@@ -14,14 +15,17 @@ enum _ReportRange { month, quarter, year }
 /// Multi-category chart palette. Was a `const` list, but theme colors are
 /// runtime values, so it's now a function. The fixed hues stay muted/warm.
 List<Color> _chartPalette(ColorScheme colors, FinanceColors finance) => [
-      colors.primary,
-      finance.income,
-      const Color(0xFF7A6A9C), // dusty plum
-      const Color(0xFFB99A3E), // muted ochre
-      const Color(0xFF4A7A8C), // dusty teal
-      finance.expense,
-      const Color(0xFF8C6F52), // warm taupe
-    ];
+  colors.primary,                // Emerald
+const Color(0xFF7A6A9C),       // Dusty plum
+const Color(0xFFB99A3E),       // Muted ochre
+const Color(0xFF4A7A8C),       // Dusty teal
+const Color(0xFFC94B4B),       // Coral
+const Color(0xFF8C6F52),       // Warm taupe
+const Color(0xFF5267A9),       // Slate blue
+const Color(0xFF4D9078),       // Sage
+const Color(0xFFD9827B),       // Muted rose
+const Color(0xFF356B7A),       // Deep ocean
+];
 
 /// Reports screen: spending composition and an income/expense trend.
 /// Aggregates client-side (no /reports consumption yet).
@@ -110,9 +114,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final finance = theme.extension<FinanceColors>()!;
+    final colors = context.colors;
+    final finance = context.finance;
     final palette = _chartPalette(colors, finance);
 
     final breakdown = _expenseByCategory;
@@ -178,7 +181,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   const SizedBox(height: 32),
                   Text(
                     'Spending by category',
-                    style: theme.textTheme.titleMedium,
+                    style: context.text.titleMedium,
                   ),
                   const SizedBox(height: 16),
                   if (breakdown.isEmpty)
@@ -187,8 +190,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       child: Center(
                         child: Text(
                           'No expenses in this period',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
+                          style: context.text.bodySmall?.copyWith(
+                            color: context.colors.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -215,9 +218,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     const SizedBox(height: 20),
                     Container(
                       decoration: BoxDecoration(
-                        color: colors.surface,
+                        color: context.colors.surface,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: colors.outlineVariant),
+                        border: Border.all(color: context.colors.outlineVariant),
                       ),
                       child: Column(
                         children: [
@@ -234,7 +237,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               Divider(
                                 height: 1,
                                 indent: 40,
-                                color: colors.outlineVariant,
+                                color: context.colors.outlineVariant,
                               ),
                           ],
                         ],
@@ -244,13 +247,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   const SizedBox(height: 32),
                   Text(
                     'Income vs. expenses',
-                    style: theme.textTheme.titleMedium,
+                    style: context.text.titleMedium,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Last 6 months',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
+                    style: context.text.bodySmall?.copyWith(
+                      color: context.colors.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -297,22 +300,21 @@ class _SummaryStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+          style: context.text.bodySmall?.copyWith(
+            color: context.colors.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 4),
           AmountText(
               value.abs().toStringAsFixed(2),
               size: 18,
-              colorBySign: false, // uses colors.onSurface, which is what you wanted
+              colorBySign: false, // uses context.colors.onSurface, which is what you wanted
             ),
       ],
     );
@@ -334,9 +336,6 @@ class _CategoryBreakdownRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       child: Row(
@@ -350,20 +349,20 @@ class _CategoryBreakdownRow extends StatelessWidget {
           Expanded(
             child: Text(
               category?.name ?? 'Uncategorized',
-              style: theme.textTheme.bodyMedium,
+              style: context.text.bodyMedium,
             ),
           ),
           Text(
             '${(percent * 100).round()}%',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colors.onSurfaceVariant,
+            style: context.text.bodySmall?.copyWith(
+              color: context.colors.onSurfaceVariant,
             ),
           ),
           const SizedBox(width: 10),
           AmountText(
             amount.toStringAsFixed(2),
             size: 13,
-            colorBySign: false, // uses colors.onSurface, which is what you wanted
+            colorBySign: false, // uses context.colors.onSurface, which is what you wanted
           ),
         ],
       ),
@@ -382,10 +381,9 @@ class _MonthlyTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final finance = theme.extension<FinanceColors>()!;
-    final labelStyle = theme.textTheme.bodySmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
+    final finance = context.finance;
+    final labelStyle = context.text.bodySmall?.copyWith(
+      color: context.colors.onSurfaceVariant,
     );
 
     final maxVal = months.fold<double>(
@@ -452,7 +450,6 @@ class _LegendDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -465,8 +462,8 @@ class _LegendDot extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+          style: context.text.bodySmall?.copyWith(
+            color: context.colors.onSurfaceVariant,
           ),
         ),
       ],
