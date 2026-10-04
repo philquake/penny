@@ -1,7 +1,6 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/material.dart';
 
 import '../models/category.dart';
 import '../models/transaction_type.dart';
@@ -105,23 +104,30 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   }
 
   Future<void> _scanReceipt() async {
-    final source = await showCupertinoModalPopup<ImageSource>(
+    final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: const Text('Scan receipt'),
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () => Navigator.of(context).pop(ImageSource.camera),
-            child: const Text('Use camera'),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () => Navigator.of(context).pop(ImageSource.gallery),
-            child: const Text('Choose photo'),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Scan receipt', style: context.text.titleMedium),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_rounded),
+              title: const Text('Use camera'),
+              onTap: () => Navigator.of(context).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded),
+              title: const Text('Choose photo'),
+              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+            ),
+          ],
         ),
       ),
     );
@@ -156,9 +162,9 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
       }
 
       if (parsed.amount != null || parsed.merchant != null || parsed.date != null) {
-        await showCupertinoDialog<void>(
+        await showDialog<void>(
           context: context,
-          builder: (context) => CupertinoAlertDialog(
+          builder: (context) => AlertDialog(
             title: const Text('Receipt parsed'),
             content: Text(
               [
@@ -169,7 +175,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
               ].join('\n'),
             ),
             actions: [
-              CupertinoDialogAction(
+              TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('OK'),
               ),
@@ -179,13 +185,13 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
       }
     } catch (error) {
       if (!mounted) return;
-      await showCupertinoDialog<void>(
+      await showDialog<void>(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
+        builder: (context) => AlertDialog(
           title: const Text('Couldn\'t scan receipt'),
           content: Text(error.toString()),
           actions: [
-            CupertinoDialogAction(
+            TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('OK'),
             ),
@@ -204,34 +210,29 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     final options = _categoriesForType;
     if (options.isEmpty) return;
 
-    final picked = await showCupertinoModalPopup<Category>(
+    final picked = await showModalBottomSheet<Category>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: Text('Category', style: context.text.labelLarge),
-        actions: [
-          for (final category in options)
-            CupertinoActionSheetAction(
-              onPressed: () => Navigator.of(context).pop(category),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(categoryIcon(category.icon),
-                      size: 18, color: context.colors.onPrimaryContainer),
-                  const SizedBox(width: 8),
-                  Text(category.name, style: context.text.bodyMedium),
-                  if (_category?.id == category.id) ...[
-                    const SizedBox(width: 8),
-                    Icon(CupertinoIcons.check_mark,
-                        size: 16, color: context.colors.primary),
-                  ],
-                ],
-              ),
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Text('Category', style: context.text.titleMedium),
             ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(context).pop(),
-          isDestructiveAction: false,
-          child: const Text('Cancel'),
+            for (final category in options)
+              ListTile(
+                leading: Icon(categoryIcon(category.icon),
+                    size: 18, color: context.colors.onPrimaryContainer),
+                title: Text(category.name, style: context.text.bodyMedium),
+                trailing: _category?.id == category.id
+                    ? Icon(Icons.check_rounded,
+                        size: 16, color: context.colors.primary)
+                    : null,
+                onTap: () => Navigator.of(context).pop(category),
+              ),
+          ],
         ),
       ),
     );
@@ -240,38 +241,15 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   }
 
   Future<void> _pickDate() async {
-
-    await showCupertinoModalPopup(
+    final now = DateTime.now();
+    final picked = await showDatePicker(
       context: context,
-      builder: (context) => Container(
-        height: 300,
-        color: context.colors.surface,
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  CupertinoButton(
-                    child: const Text('Done'),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              Expanded(
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.date,
-                  initialDateTime: _date,
-                  maximumDate: DateTime.now(),
-                  onDateTimeChanged: (value) => setState(() => _date = value),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      initialDate: _date.isAfter(now) ? now : _date,
+      firstDate: DateTime(2000),
+      lastDate: now,
     );
+
+    if (picked != null) setState(() => _date = picked);
   }
 
   Future<void> _handleSave() async {
@@ -311,13 +289,13 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      await showCupertinoDialog<void>(
+      await showDialog<void>(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
+        builder: (context) => AlertDialog(
           title: const Text('Couldn\'t save transaction'),
           content: Text(error.toString()),
           actions: [
-            CupertinoDialogAction(
+            TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('OK'),
             ),
@@ -328,18 +306,20 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   }
 
   Future<void> _handleDelete() async {
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
+      builder: (context) => AlertDialog(
         title: const Text('Delete transaction?'),
         content: const Text('This can\'t be undone.'),
         actions: [
-          CupertinoDialogAction(
+          TextButton(
             child: const Text('Cancel'),
             onPressed: () => Navigator.of(context).pop(false),
           ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: context.colors.error,
+            ),
             child: const Text('Delete'),
             onPressed: () => Navigator.of(context).pop(true),
           ),
@@ -360,31 +340,32 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
-
-    return CupertinoPageScaffold(
+    return Scaffold(
       backgroundColor: context.colors.surface,
-      navigationBar: CupertinoNavigationBar(
+      appBar: AppBar(
         backgroundColor: context.colors.surface,
-        border: null,
-        middle: Text(widget.isEditing ? 'Edit Transaction' : 'Add Transaction'),
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        title: Text(widget.isEditing ? 'Edit Transaction' : 'Add Transaction'),
+        leadingWidth: 80,
+        leading: TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: _canSave && !_isSaving ? _handleSave : null,
-          child: Text(
-            'Save',
-            style: TextStyle(
-              color: _canSave ? context.colors.primary : context.colors.primary, //might need a different color on the second one
-              fontWeight: FontWeight.w600,
+        actions: [
+          TextButton(
+            onPressed: _canSave && !_isSaving ? _handleSave : null,
+            child: Text(
+              'Save',
+              style: TextStyle(
+                color: _canSave ? context.colors.primary : context.colors.outline,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ),
+        ],
       ),
-      child: SafeArea(
+      body: SafeArea(
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
           behavior: HitTestBehavior.opaque,
@@ -435,24 +416,31 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
               const Divider(),
               _FieldRow(
                 label: 'Description',
-                child: CupertinoTextField(
+                child: TextField(
                   controller: _descriptionController,
-                  placeholder: 'Optional note',
-                  padding: EdgeInsets.zero,
-                  decoration: const BoxDecoration(),
                   style: context.text.bodyMedium,
-                  placeholderStyle:
-                      context.text.bodyMedium?.copyWith(color: context.colors.outline),
+                  decoration: InputDecoration(
+                    hintText: 'Optional note',
+                    hintStyle: context.text.bodyMedium
+                        ?.copyWith(color: context.colors.outline),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
                 ),
               ),
               if (widget.isEditing && widget.onDelete != null) ...[
                 const SizedBox(height: 36),
                 SizedBox(
                   height: 46,
-                  child: CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    color: context.colors.errorContainer,
-                    borderRadius: BorderRadius.circular(8),
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      backgroundColor: context.colors.errorContainer,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
                     onPressed: _handleDelete,
                     child: Text(
                       'Delete Transaction',
@@ -480,25 +468,20 @@ class _TypeToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    return CupertinoSlidingSegmentedControl<TransactionType>(
-      backgroundColor: context.colors.surfaceContainerHigh,
-      thumbColor: CupertinoColors.white,
-      groupValue: type,
-      children: {
-        TransactionType.expense: _label(context.text.bodyMedium, 'Expense'),
-        TransactionType.income: _label(context.text.bodyMedium, 'Income'),
-      },
-      onValueChanged: (value) {
-        if (value != null) onChanged(value);
-      },
+    return SegmentedButton<TransactionType>(
+      showSelectedIcon: false,
+      style: SegmentedButton.styleFrom(
+        backgroundColor: context.colors.surfaceContainerHigh,
+        textStyle: context.text.bodyMedium?.copyWith(fontSize: 14),
+      ),
+      segments: const [
+        ButtonSegment(value: TransactionType.expense, label: Text('Expense')),
+        ButtonSegment(value: TransactionType.income, label: Text('Income')),
+      ],
+      selected: {type},
+      onSelectionChanged: (selection) => onChanged(selection.first),
     );
   }
-
-  Widget _label(TextStyle? style, String text) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(text, style: style?.copyWith(fontSize: 14)),
-      );
 }
 
 class _AmountField extends StatelessWidget {
@@ -509,23 +492,25 @@ class _AmountField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    
     final color =
         type == TransactionType.income ? context.finance.income : context.colors.error;
     return IntrinsicWidth(
-      child: CupertinoTextField(
+      child: TextField(
         controller: controller,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         textAlign: TextAlign.center,
-        prefix: Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child: Text('\$', style: context.text.displaySmall?.copyWith(color: color)),
-        ),
-        placeholder: '0.00',
-        placeholderStyle: context.text.displaySmall?.copyWith(color: context.colors.outline),
         style: context.text.displaySmall?.copyWith(color: color),
-        decoration: const BoxDecoration(),
-        padding: EdgeInsets.zero,
+        decoration: InputDecoration(
+          prefix: Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text('\$', style: context.text.displaySmall?.copyWith(color: color)),
+          ),
+          hintText: '0.00',
+          hintStyle: context.text.displaySmall?.copyWith(color: context.colors.outline),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
       ),
     );
   }
@@ -540,7 +525,6 @@ class _FieldRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final row = Padding(
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
@@ -551,7 +535,7 @@ class _FieldRow extends StatelessWidget {
           ),
           Expanded(child: child),
           if (onTap != null)
-            Icon(CupertinoIcons.chevron_right,
+            Icon(Icons.chevron_right_rounded,
                 size: 15, color: context.colors.outline),
         ],
       ),
@@ -559,9 +543,8 @@ class _FieldRow extends StatelessWidget {
 
     if (onTap == null) return row;
 
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
+    return InkWell(
+      onTap: onTap,
       child: row,
     );
   }

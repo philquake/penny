@@ -1,33 +1,32 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import '../models/category.dart';
 import '../models/transactions.dart';
 import '../models/transaction_type.dart';
 import '../core/widgets/amount_text.dart';
 import '../core/theme/theme_x.dart';
 
-
 const _monthAbbr = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-/// Maps a Category's icon key (e.g. 'bag', 'car') to a Cupertino glyph.
+/// Maps a Category's icon key (e.g. 'bag', 'car') to a Material glyph.
 /// Falls back to a generic circle for unrecognized/missing keys so a new
 /// category never breaks the UI.
 IconData categoryIcon(String? iconKey) {
   switch (iconKey) {
     case 'bag':
-      return CupertinoIcons.bag;
+      return Icons.shopping_bag_outlined;
     case 'arrow_down_left':
-      return CupertinoIcons.arrow_down_left;
+      return Icons.south_west_rounded;
     case 'house':
-      return CupertinoIcons.house;
+      return Icons.home_outlined;
     case 'car':
-      return CupertinoIcons.car;
+      return Icons.directions_car_outlined;
     case 'repeat':
-      return CupertinoIcons.repeat;
+      return Icons.repeat_rounded;
     default:
-      return CupertinoIcons.circle;
+      return Icons.circle_outlined;
   }
 }
 
@@ -51,7 +50,6 @@ class TransactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final d = transaction.transactionDate;
     final dateLabel = '${_monthAbbr[d.month - 1]} ${d.day}';
 
@@ -65,10 +63,8 @@ class TransactionRow extends StatelessWidget {
         ? transaction.description!
         : category.name;
 
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      minimumSize: Size.zero,
-      onPressed: onTap,
+    return InkWell(
+      onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(

@@ -1,11 +1,9 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import '../models/category.dart';
 import '../models/transaction_type.dart';
 import '../models/transactions.dart';
 import '../widgets/transaction_row.dart';
 import '../core/theme/theme_x.dart';
-
-import 'package:flutter/material.dart';
 
 enum _FlowFilter { all, income, expenses }
 
@@ -87,17 +85,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     final groups = _grouped;
 
-    return CupertinoPageScaffold(
+    return Scaffold(
       backgroundColor: context.colors.surface,
-      child: CustomScrollView(
+      body: CustomScrollView(
         slivers: [
-          CupertinoSliverNavigationBar(
+          SliverAppBar.large(
             backgroundColor: context.colors.surface,
-            border: null,
-            largeTitle: const Text('Transactions'),
+            scrolledUnderElevation: 0,
+            title: const Text('Transactions'),
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -105,26 +102,39 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  CupertinoSearchTextField(
+                  SearchBar(
                     controller: _searchController,
-                    placeholder: 'Search description or category',
-                    style: context.text.bodyMedium,
-                    backgroundColor: CupertinoColors.white,
+                    hintText: 'Search description or category',
+                    textStyle: WidgetStatePropertyAll(context.text.bodyMedium),
+                    backgroundColor:
+                        WidgetStatePropertyAll(context.colors.surfaceContainerLowest),
+                    elevation: const WidgetStatePropertyAll(0),
+                    leading: const Icon(Icons.search_rounded),
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 12),
-                  CupertinoSlidingSegmentedControl<_FlowFilter>(
-                    backgroundColor: context.colors.surfaceContainerHigh,
-                    thumbColor: CupertinoColors.white,
-                    groupValue: _filter,
-                    children: {
-                      _FlowFilter.all: _segmentLabel(context, 'All'),
-                      _FlowFilter.income: _segmentLabel(context,'Income'),
-                      _FlowFilter.expenses: _segmentLabel(context, 'Expenses'),
-                    },
-                    onValueChanged: (value) {
-                      if (value != null) setState(() => _filter = value);
-                    },
+                  SegmentedButton<_FlowFilter>(
+                    showSelectedIcon: false,
+                    style: SegmentedButton.styleFrom(
+                      backgroundColor: context.colors.surfaceContainerHigh,
+                    ),
+                    segments: [
+                      ButtonSegment(
+                        value: _FlowFilter.all,
+                        label: _segmentLabel(context, 'All'),
+                      ),
+                      ButtonSegment(
+                        value: _FlowFilter.income,
+                        label: _segmentLabel(context, 'Income'),
+                      ),
+                      ButtonSegment(
+                        value: _FlowFilter.expenses,
+                        label: _segmentLabel(context, 'Expenses'),
+                      ),
+                    ],
+                    selected: {_filter},
+                    onSelectionChanged: (selection) =>
+                        setState(() => _filter = selection.first),
                   ),
                 ],
               ),
@@ -150,7 +160,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: CupertinoColors.white,
+                          color: context.colors.surfaceContainerLowest,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: context.colors.outlineVariant),
                         ),
@@ -167,7 +177,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                 );
                               }),
                               if (i != entry.value.length - 1)
-                                const Divider(indent: 56),
+                                const Divider(height: 1, indent: 56),
                             ],
                           ],
                         ),
@@ -182,18 +192,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-Widget _segmentLabel(BuildContext context, String text) {
-
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Text(
-      text,
-      style: context.text.bodyMedium?.copyWith(
-        fontSize: 13,
+  Widget _segmentLabel(BuildContext context, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Text(
+        text,
+        style: context.text.bodyMedium?.copyWith(
+          fontSize: 13,
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class _EmptyState extends StatelessWidget {
@@ -202,14 +211,13 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(CupertinoIcons.doc_text_search,
+            Icon(Icons.search_off_rounded,
                 size: 32, color: context.colors.outline),
             const SizedBox(height: 12),
             Text(

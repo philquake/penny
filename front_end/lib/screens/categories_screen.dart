@@ -1,11 +1,10 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+
 import '../models/category.dart';
 import '../models/transaction_type.dart';
 import '../widgets/transaction_row.dart' show categoryIcon;
-
-import 'package:flutter/material.dart';
 import '../core/theme/theme_x.dart';
-import 'package:dio/dio.dart';
 
 /// Categories screen — grouped by type (Expense/Income), the way budgets
 /// and the transaction filters both key off type already.
@@ -31,13 +30,13 @@ class CategoriesScreen extends StatefulWidget {
 
 class _CategoriesScreenState extends State<CategoriesScreen> {
   late List<Category> _categories;
-  
+
   @override
   void initState() {
     super.initState();
     _categories = List.of(widget.categories);
   }
-  
+
   String _errorMessage(Object error) {
     if (error is DioException) {
       final data = error.response?.data;
@@ -51,21 +50,23 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         ..sort((a, b) => a.name.compareTo(b.name));
 
   Future<void> _confirmDelete(Category category) async {
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
+      builder: (context) => AlertDialog(
         title: Text('Delete "${category.name}"?'),
         content: const Text(
-        'This can\'t be undone. Categories that still have transactions '
-        'or budgets can\'t be deleted.',
-      ),
+          'This can\'t be undone. Categories that still have transactions '
+          'or budgets can\'t be deleted.',
+        ),
         actions: [
-          CupertinoDialogAction(
+          TextButton(
             child: const Text('Cancel'),
             onPressed: () => Navigator.of(context).pop(false),
           ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: context.colors.error,
+            ),
             child: const Text('Delete'),
             onPressed: () => Navigator.of(context).pop(true),
           ),
@@ -73,7 +74,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       ),
     );
 
-        if (confirmed != true) return;
+    if (confirmed != true) return;
 
     try {
       await widget.onDelete(category.id);
@@ -81,13 +82,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       setState(() => _categories.removeWhere((c) => c.id == category.id));
     } catch (error) {
       if (!mounted) return;
-      await showCupertinoDialog<void>(
+      await showDialog<void>(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
+        builder: (context) => AlertDialog(
           title: const Text('Can\'t delete category'),
           content: Text(_errorMessage(error)),
           actions: [
-            CupertinoDialogAction(
+            TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('OK'),
             ),
@@ -98,8 +99,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 
   Future<void> _showAddCategorySheet() async {
-    final created = await showCupertinoModalPopup<CategoryCreate>(
+    final created = await showModalBottomSheet<CategoryCreate>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => _AddCategorySheet(),
     );
 
@@ -123,25 +126,24 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-
-    return CupertinoPageScaffold(
+    return Scaffold(
       backgroundColor: context.colors.surface,
-      child: CustomScrollView(
+      body: CustomScrollView(
         slivers: [
-          CupertinoSliverNavigationBar(
+          SliverAppBar.large(
             backgroundColor: context.colors.surface,
-            border: null,
-            largeTitle: const Text('Categories'),
-            trailing: CupertinoButton(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(32, 32),
-              onPressed: _showAddCategorySheet,
-              child: Icon(
-                CupertinoIcons.add_circled_solid,
-                color: context.colors.primary,
-                size: 28,
+            scrolledUnderElevation: 0,
+            title: const Text('Categories'),
+            actions: [
+              IconButton(
+                onPressed: _showAddCategorySheet,
+                icon: Icon(
+                  Icons.add_circle_rounded,
+                  color: context.colors.primary,
+                  size: 28,
+                ),
               ),
-            ),
+            ],
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -183,7 +185,6 @@ class _CategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -197,7 +198,7 @@ class _CategorySection extends StatelessWidget {
         else
           Container(
             decoration: BoxDecoration(
-              color: CupertinoColors.white,
+              color: context.colors.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: context.colors.outlineVariant),
             ),
@@ -208,7 +209,8 @@ class _CategorySection extends StatelessWidget {
                     category: categories[i],
                     onDelete: () => onDelete(categories[i]),
                   ),
-                  if (i != categories.length - 1) const Divider(indent: 56),
+                  if (i != categories.length - 1)
+                    const Divider(height: 1, indent: 56),
                 ],
               ],
             ),
@@ -226,7 +228,6 @@ class _CategoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
@@ -249,11 +250,11 @@ class _CategoryRow extends StatelessWidget {
           if (category.isDefault)
             Text('Default', style: context.text.bodySmall)
           else
-            CupertinoButton(
+            IconButton(
               padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               onPressed: onDelete,
-              child: Icon(CupertinoIcons.minus_circle,
+              icon: Icon(Icons.remove_circle_outline_rounded,
                   size: 20, color: context.colors.error),
             ),
         ],
@@ -296,14 +297,13 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       decoration: BoxDecoration(
         color: context.colors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: SafeArea(
         top: false,
@@ -316,14 +316,12 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
+                  TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     child: const Text('Cancel'),
                   ),
                   Text('New Category', style: context.text.titleLarge?.copyWith(fontSize: 16)),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
+                  TextButton(
                     onPressed: _canSave ? _handleSave : null,
                     child: Text(
                       'Add',
@@ -338,34 +336,49 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
               const SizedBox(height: 18),
               Text('Name', style: context.text.labelMedium),
               const SizedBox(height: 6),
-              CupertinoTextField(
+              TextField(
                 controller: _nameController,
-                placeholder: 'e.g. Pet Care',
                 autofocus: true,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 style: context.text.bodyMedium,
-                placeholderStyle: context.text.bodyMedium?.copyWith(color: context.colors.outline),
-                decoration: BoxDecoration(
-                  color: CupertinoColors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: context.colors.outlineVariant),
+                decoration: InputDecoration(
+                  hintText: 'e.g. Pet Care',
+                  hintStyle: context.text.bodyMedium?.copyWith(color: context.colors.outline),
+                  filled: true,
+                  fillColor: context.colors.surfaceContainerLowest,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: context.colors.outlineVariant),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: context.colors.primary),
+                  ),
                 ),
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 18),
               Text('Type', style: context.text.labelMedium),
               const SizedBox(height: 6),
-              CupertinoSlidingSegmentedControl<TransactionType>(
-                backgroundColor: context.colors.surfaceContainerHigh,
-                thumbColor: CupertinoColors.white,
-                groupValue: _type,
-                children: {
-                  TransactionType.expense: _segmentLabel(context, 'Expense'),
-                  TransactionType.income: _segmentLabel(context, 'Income'),
-                },
-                onValueChanged: (value) {
-                  if (value != null) setState(() => _type = value);
-                },
+              SegmentedButton<TransactionType>(
+                showSelectedIcon: false,
+                style: SegmentedButton.styleFrom(
+                  backgroundColor: context.colors.surfaceContainerHigh,
+                ),
+                segments: [
+                  ButtonSegment(
+                    value: TransactionType.expense,
+                    label: _segmentLabel(context, 'Expense'),
+                  ),
+                  ButtonSegment(
+                    value: TransactionType.income,
+                    label: _segmentLabel(context, 'Income'),
+                  ),
+                ],
+                selected: {_type},
+                onSelectionChanged: (selection) =>
+                    setState(() => _type = selection.first),
               ),
               const SizedBox(height: 18),
               Text('Icon', style: context.text.labelMedium),
@@ -374,22 +387,21 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   for (final key in _iconChoices)
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      onPressed: () => setState(() => _icon = key),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () => setState(() => _icon = key),
                       child: Container(
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
                           color: _icon == key
-                              ? context.colors.primary.withValues(alpha:0.15)
+                              ? context.colors.primary.withValues(alpha: 0.15)
                               : context.colors.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: _icon == key
                                 ? context.colors.primary
-                                : const Color(0x00000000),
+                                : Colors.transparent,
                           ),
                         ),
                         alignment: Alignment.center,
@@ -407,15 +419,14 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
   }
 
   Widget _segmentLabel(BuildContext context, String text) {
-
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Text(
-      text,
-      style: context.text.bodyMedium?.copyWith(
-        fontSize: 14,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        text,
+        style: context.text.bodyMedium?.copyWith(
+          fontSize: 14,
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

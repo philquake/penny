@@ -1,6 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/api_config.dart';
 import 'models/category.dart';
@@ -43,6 +42,7 @@ class PennyApp extends ConsumerWidget {
     );
   }
 }
+
 /// Reacts to session state: a spinner while checking for a stored token,
 /// the Login screen if signed out, the tabbed shell if signed in.
 class _AppRoot extends ConsumerWidget {
@@ -54,9 +54,9 @@ class _AppRoot extends ConsumerWidget {
 
     switch (session.status) {
       case SessionStatus.bootstrapping:
-        return  CupertinoPageScaffold(
+        return Scaffold(
           backgroundColor: context.colors.surface,
-          child: Center(child: CupertinoActivityIndicator()),
+          body: const Center(child: CircularProgressIndicator()),
         );
       case SessionStatus.signedOut:
         return LoginScreen(
@@ -69,9 +69,8 @@ class _AppRoot extends ConsumerWidget {
   }
 }
 
-/// The authenticated app: four tabs, each its own CupertinoTabView so
-/// pushed screens (Add/Edit Transaction, Categories) get their own
-/// navigation stack per tab, matching standard iOS tab bar behavior.
+/// The authenticated app: four tabs kept alive in an IndexedStack,
+/// switched with a Material NavigationBar.
 class _AppShell extends StatefulWidget {
   const _AppShell();
 
@@ -80,44 +79,40 @@ class _AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<_AppShell> {
-  late final CupertinoTabController _tabController = CupertinoTabController();
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+  int _index = 0;
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoTabScaffold(
-      controller: _tabController,
-      tabBar: CupertinoTabBar(
+    final tabs = [
+      _HomeTab(
+        onViewBudgets: () => setState(() => _index = 1),
+      ),
+      const _BudgetsTab(),
+      const _ReportsTab(),
+      const _SettingsTab(),
+    ];
+
+    return Scaffold(
+      backgroundColor: context.colors.surface,
+      body: IndexedStack(
+        index: _index,
+        children: tabs,
+      ),
+      bottomNavigationBar: NavigationBar(
         backgroundColor: context.colors.surface,
-        activeColor: context.colors.primary,
-        inactiveColor: context.colors.outline,
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.house), label: 'Overview'),
-          BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.chart_bar_alt_fill), label: 'Budgets'),
-          BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.graph_circle), label: 'Reports'),
-          BottomNavigationBarItem(
-              icon: Icon(CupertinoIcons.settings), label: 'Settings'),
+        selectedIndex: _index,
+        onDestinationSelected: (i) => setState(() => _index = i),
+        destinations: const [
+          NavigationDestination(
+              icon: Icon(Icons.home_rounded), label: 'Overview'),
+          NavigationDestination(
+              icon: Icon(Icons.bar_chart_rounded), label: 'Budgets'),
+          NavigationDestination(
+              icon: Icon(Icons.pie_chart_rounded), label: 'Reports'),
+          NavigationDestination(
+              icon: Icon(Icons.settings_rounded), label: 'Settings'),
         ],
       ),
-      tabBuilder: (context, index) {
-        final tabs = [
-          _HomeTab(
-            onViewBudgets: () => _tabController.index = 1,
-          ),
-          const _BudgetsTab(),
-          const _ReportsTab(),
-          const _SettingsTab(),
-        ];
-        return CupertinoTabView(builder: (context) => tabs[index]);
-      },
     );
   }
 }
@@ -130,15 +125,15 @@ Widget _asyncBody<T>(
 }) {
   return value.when(
     data: data,
-    loading: () =>  CupertinoPageScaffold(
+    loading: () => Scaffold(
       backgroundColor: context.colors.surface,
-      child: Center(child: CupertinoActivityIndicator()),
+      body: const Center(child: CircularProgressIndicator()),
     ),
-    error: (error, stack) => CupertinoPageScaffold(
+    error: (error, stack) => Scaffold(
       backgroundColor: context.colors.surface,
-      child: Center(
+      body: Center(
         child: Padding(
-          padding:  EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           child: Text(
             'Couldn\'t load data.\n$error',
             style: context.text.bodyMedium?.copyWith(color: context.colors.error),
@@ -159,7 +154,7 @@ Future<void> _openAddEditTransaction(
   final categories = categoriesState.asData?.value ?? const <Category>[];
 
   await Navigator.of(context).push(
-    CupertinoPageRoute(
+    MaterialPageRoute(
       builder: (context) => AddEditTransactionScreen(
         categories: categories,
         existing: existing,
@@ -217,8 +212,8 @@ class _BudgetsTab extends ConsumerWidget {
     final categoriesState = ref.watch(categoriesProvider);
     final budgetsState = ref.watch(budgetsProvider);
 
-    return _asyncBody(context,categoriesState, data: (categories) {
-      return _asyncBody(context,budgetsState, data: (entries) {
+    return _asyncBody(context, categoriesState, data: (categories) {
+      return _asyncBody(context, budgetsState, data: (entries) {
         final expenseCategories =
             categories.where((c) => c.type == TransactionType.expense).toList();
         return BudgetsScreen(
@@ -240,8 +235,8 @@ class _ReportsTab extends ConsumerWidget {
     final categoriesState = ref.watch(categoriesProvider);
     final transactionsState = ref.watch(transactionsProvider);
 
-    return _asyncBody(context,categoriesState, data: (categories) {
-      return _asyncBody(context,transactionsState, data: (transactions) {
+    return _asyncBody(context, categoriesState, data: (categories) {
+      return _asyncBody(context, transactionsState, data: (transactions) {
         return ReportsScreen(transactions: transactions, categories: categories);
       });
     });
@@ -256,9 +251,9 @@ class _SettingsTab extends ConsumerWidget {
     final session = ref.watch(sessionProvider);
     final user = session.user;
     if (user == null) {
-      return CupertinoPageScaffold(
+      return Scaffold(
         backgroundColor: context.colors.surface,
-        child: Center(child: CupertinoActivityIndicator()),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -272,13 +267,13 @@ class _SettingsTab extends ConsumerWidget {
       // instance stored alongside the token, read at ApiClient creation).
       serverAddress: ApiConfig.baseUrl,
       onSignOut: () => ref.read(sessionProvider.notifier).signOut(),
-        onNotificationsChanged: () =>
+      onNotificationsChanged: () =>
           ref.read(budgetsProvider.notifier).refresh(),
       onManageCategories: () {
         final categories =
             ref.read(categoriesProvider).asData?.value ?? const <Category>[];
         Navigator.of(context).push(
-          CupertinoPageRoute(
+          MaterialPageRoute(
             builder: (context) => CategoriesScreen(
               categories: categories,
               onCreate: (data) => ref.read(categoriesProvider.notifier).create(data),

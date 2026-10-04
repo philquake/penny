@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 import '../models/budget_entry.dart';
 import '../models/category.dart';
@@ -6,9 +6,7 @@ import '../models/transaction_type.dart';
 import '../models/transactions.dart';
 import '../core/widgets/amount_text.dart';
 import '../widgets/transaction_row.dart';
-import 'package:flutter/material.dart';
 import '../core/theme/theme_x.dart';
-
 
 /// Dashboard / Home screen — the first thing a user sees after signing in.
 /// Ledger-style: a running balance up top, this month's flow beneath it,
@@ -88,49 +86,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return match.isNotEmpty ? match.first : null;
   }
 
-Widget _segmentLabel(BuildContext context, String text) {
-
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Text(text,
-      style: context.text.displayMedium?.copyWith(
-        fontSize: 13,
+  Widget _segmentLabel(BuildContext context, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Text(
+        text,
+        style: context.text.bodyMedium?.copyWith(
+          fontSize: 13,
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final recent = _recent;
 
-    return CupertinoPageScaffold(
+    return Scaffold(
       backgroundColor: context.colors.surface,
-      child: Stack(
+      body: Stack(
         children: [
           CustomScrollView(
             slivers: [
-              CupertinoSliverNavigationBar(
+              SliverAppBar.large(
                 backgroundColor: context.colors.surface,
-                border: null,
-                largeTitle: const Text('Overview'),
+                scrolledUnderElevation: 0,
+                title: const Text('Overview'),
               ),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                  child: CupertinoSlidingSegmentedControl<_DashboardView>(
-                    backgroundColor: context.colors.surfaceContainerHigh,
-                    thumbColor: CupertinoColors.white,
-                    groupValue: _selectedView,
-                    children: {
-                      _DashboardView.overview: _segmentLabel(context, 'Overview'),
-                      _DashboardView.expenses: _segmentLabel(context, 'Expenses'),
-                    },
-                    onValueChanged: (value) {
-                      if (value != null) {
-                        setState(() => _selectedView = value);
-                      }
-                    },
+                  child: SegmentedButton<_DashboardView>(
+                    showSelectedIcon: false,
+                    style: SegmentedButton.styleFrom(
+                      backgroundColor: context.colors.surfaceContainerHigh,
+                    ),
+                    segments: [
+                      ButtonSegment(
+                        value: _DashboardView.overview,
+                        label: _segmentLabel(context, 'Overview'),
+                      ),
+                      ButtonSegment(
+                        value: _DashboardView.expenses,
+                        label: _segmentLabel(context, 'Expenses'),
+                      ),
+                    ],
+                    selected: {_selectedView},
+                    onSelectionChanged: (selection) =>
+                        setState(() => _selectedView = selection.first),
                   ),
                 ),
               ),
@@ -161,14 +164,14 @@ Widget _segmentLabel(BuildContext context, String text) {
                               vertical: 14,
                             ),
                             decoration: BoxDecoration(
-                              color: CupertinoColors.white,
+                              color: context.colors.surfaceContainerLowest,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: context.colors.outlineVariant),
                             ),
                             child: Row(
                               children: [
                                 Icon(
-                                  CupertinoIcons.chart_bar,
+                                  Icons.bar_chart_rounded,
                                   color: context.colors.onSurfaceVariant,
                                   size: 20,
                                 ),
@@ -179,11 +182,14 @@ Widget _segmentLabel(BuildContext context, String text) {
                                     style: context.text.bodyMedium?.copyWith(fontSize: 14),
                                   ),
                                 ),
-                                CupertinoButton(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                   ),
-                                  minimumSize: Size.zero,
                                   onPressed: widget.onViewBudgets,
                                   child: Text(
                                     'Create budget',
@@ -227,7 +233,7 @@ Widget _segmentLabel(BuildContext context, String text) {
                         else
                           Container(
                             decoration: BoxDecoration(
-                              color: CupertinoColors.white,
+                              color: context.colors.surfaceContainerLowest,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: context.colors.outlineVariant),
                             ),
@@ -249,7 +255,7 @@ Widget _segmentLabel(BuildContext context, String text) {
                                     },
                                   ),
                                   if (i != recent.length - 1)
-                                    const Divider(indent: 56),
+                                    const Divider(height: 1, indent: 56),
                                 ],
                               ],
                             ),
@@ -275,15 +281,14 @@ Widget _segmentLabel(BuildContext context, String text) {
           Positioned(
             right: 20,
             bottom: 24,
-            child: CupertinoButton(
-              padding: const EdgeInsets.all(12),
-              minimumSize: const Size(56, 56),
-              borderRadius: BorderRadius.circular(28),
-              color: context.colors.primary,
+            child: FloatingActionButton(
+              backgroundColor: context.colors.primary,
+              foregroundColor: context.colors.onPrimary,
+              elevation: 0,
+              shape: const CircleBorder(),
               onPressed: widget.onAddTransaction,
               child: const Icon(
-                CupertinoIcons.add,
-                color: CupertinoColors.white,
+                Icons.add_rounded,
                 size: 28,
               ),
             ),
@@ -338,42 +343,50 @@ class _ExpensesListState extends State<_ExpensesList> {
     }).toList();
   }
 
+  Widget _label(BuildContext context, String text) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Text(text, style: context.text.bodyMedium?.copyWith(fontSize: 13)),
+      );
+
   @override
   Widget build(BuildContext context) {
-
     final rows = _filtered;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        CupertinoSearchTextField(
+        SearchBar(
           controller: _searchController,
-          placeholder: 'Search description or category',
-          style: context.text.bodyMedium,
-          backgroundColor: CupertinoColors.white,
+          hintText: 'Search description or category',
+          textStyle: WidgetStatePropertyAll(context.text.bodyMedium),
+          backgroundColor:
+              WidgetStatePropertyAll(context.colors.surfaceContainerLowest),
+          elevation: const WidgetStatePropertyAll(0),
+          leading: const Icon(Icons.search_rounded),
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 12),
-        CupertinoSlidingSegmentedControl<_FlowFilter>(
-          backgroundColor: context.colors.surfaceContainerHigh,
-          thumbColor: CupertinoColors.white,
-          groupValue: _filter,
-          children: {
-            _FlowFilter.all: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Text('All', style: context.text.bodyMedium?.copyWith(fontSize: 13)),
+        SegmentedButton<_FlowFilter>(
+          showSelectedIcon: false,
+          style: SegmentedButton.styleFrom(
+            backgroundColor: context.colors.surfaceContainerHigh,
+          ),
+          segments: [
+            ButtonSegment(
+              value: _FlowFilter.all,
+              label: _label(context, 'All'),
             ),
-            _FlowFilter.income: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Text('Income', style: context.text.bodyMedium?.copyWith(fontSize: 13)),
+            ButtonSegment(
+              value: _FlowFilter.income,
+              label: _label(context, 'Income'),
             ),
-            _FlowFilter.expenses: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Text('Expenses', style: context.text.bodyMedium?.copyWith(fontSize: 13)),
+            ButtonSegment(
+              value: _FlowFilter.expenses,
+              label: _label(context, 'Expenses'),
             ),
-          },
-          onValueChanged: (value) {
-            if (value != null) setState(() => _filter = value);
-          },
+          ],
+          selected: {_filter},
+          onSelectionChanged: (selection) =>
+              setState(() => _filter = selection.first),
         ),
         const SizedBox(height: 16),
         if (rows.isEmpty)
@@ -391,7 +404,7 @@ class _ExpensesListState extends State<_ExpensesList> {
         else
           Container(
             decoration: BoxDecoration(
-              color: CupertinoColors.white,
+              color: context.colors.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: context.colors.outlineVariant),
             ),
@@ -407,7 +420,7 @@ class _ExpensesListState extends State<_ExpensesList> {
                     );
                   }),
                   if (i != rows.length - 1)
-                    const Divider(indent: 56),
+                    const Divider(height: 1, indent: 56),
                 ],
               ],
             ),
@@ -418,6 +431,7 @@ class _ExpensesListState extends State<_ExpensesList> {
 }
 
 enum _FlowFilter { all, income, expenses }
+
 class _DailySpendingCalendar extends StatefulWidget {
   final List<Transaction> transactions;
 
@@ -526,16 +540,16 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
               child: Text(
                 'Daily spending',
                 style: context.text.titleLarge?.copyWith(
-                fontSize: 17,
+                  fontSize: 17,
                 ),
               ),
             ),
-            CupertinoButton(
+            IconButton(
               padding: EdgeInsets.zero,
-              minimumSize: const Size(32, 32),
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               onPressed: () => _changeMonth(-1),
-              child: Icon(
-                CupertinoIcons.chevron_left,
+              icon: Icon(
+                Icons.chevron_left_rounded,
                 size: 17,
                 color: context.colors.onSurfaceVariant,
               ),
@@ -544,16 +558,16 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
               '${_monthNames[_displayedMonth.month - 1]} ${_displayedMonth.year}',
               style: context.text.labelMedium,
             ),
-            CupertinoButton(
+            IconButton(
               padding: EdgeInsets.zero,
-              minimumSize: const Size(32, 32),
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               onPressed:
                   _displayedMonth.year == DateTime.now().year &&
                       _displayedMonth.month == DateTime.now().month
                   ? null
                   : () => _changeMonth(1),
-              child: Icon(
-                CupertinoIcons.chevron_right,
+              icon: Icon(
+                Icons.chevron_right_rounded,
                 size: 17,
                 color: context.colors.onSurfaceVariant,
               ),
@@ -561,7 +575,7 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
           ],
         ),
         const SizedBox(height: 8),
-        const Divider(),
+        const Divider(height: 1),
         const SizedBox(height: 10),
         Row(
           children: [
@@ -571,7 +585,7 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
                   child: Text(
                     weekday,
                     style: context.text.bodySmall?.copyWith(
-                    fontSize: 10,
+                      fontSize: 10,
                     ),
                   ),
                 ),
@@ -610,36 +624,43 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
 
             return Padding(
               padding: const EdgeInsets.all(2),
-              child: CupertinoButton(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                onPressed: () => setState(() => _selectedDate = date),
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: isSelected ? context.colors.surfaceContainerHighest : null,
-                    borderRadius: BorderRadius.circular(6),
-                    border: isToday && !isSelected
-                        ? Border.all(color: context.colors.outlineVariant,)
-                        : null,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('$day', style: context.text.bodyMedium?.copyWith(
-                        fontSize: 12,)),
-                      if (total > 0)
+              child: Material(
+                color: isSelected
+                    ? context.colors.surfaceContainerHighest
+                    : Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  side: isToday && !isSelected
+                      ? BorderSide(color: context.colors.outlineVariant)
+                      : BorderSide.none,
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(6),
+                  onTap: () => setState(() => _selectedDate = date),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         Text(
-                          _compactAmount(total),
-                          maxLines: 1,
-                          overflow: TextOverflow.clip,
-                          style: context.text.bodySmall?.copyWith(
-                            fontSize: 8,
-                            fontWeight: FontWeight.w500,
-                            color: context.colors.error,
+                          '$day',
+                          style: context.text.bodyMedium?.copyWith(
+                            fontSize: 12,
                           ),
                         ),
-                    ],
+                        if (total > 0)
+                          Text(
+                            _compactAmount(total),
+                            maxLines: 1,
+                            overflow: TextOverflow.clip,
+                            style: context.text.bodySmall?.copyWith(
+                              fontSize: 8,
+                              fontWeight: FontWeight.w500,
+                              color: context.colors.error,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -647,7 +668,7 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
           },
         ),
         const SizedBox(height: 8),
-        const Divider(),
+        const Divider(height: 1),
         const SizedBox(height: 10),
         Row(
           children: [
@@ -699,18 +720,18 @@ class _BalanceBlock extends StatelessWidget {
               child: _FlowStat(
                 label: 'In this month',
                 value: income,
-                icon: CupertinoIcons.arrow_down_left,
+                icon: Icons.south_west_rounded,
                 color: context.finance.income,
               ),
             ),
             const SizedBox(width: 12),
-            Container(width: 1, height: 34, color:context.colors.outlineVariant),
+            Container(width: 1, height: 34, color: context.colors.outlineVariant),
             const SizedBox(width: 12),
             Expanded(
               child: _FlowStat(
                 label: 'Out this month',
                 value: expenses,
-                icon: CupertinoIcons.arrow_up_right,
+                icon: Icons.north_east_rounded,
                 color: context.finance.expense,
               ),
             ),
@@ -775,13 +796,19 @@ class _SectionHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: context.text.titleLarge?.copyWith(fontSize: 17)),
-        CupertinoButton(
-          padding: EdgeInsets.zero,
-          minimumSize: Size.zero,
+        TextButton(
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
           onPressed: onAction,
           child: Text(
             actionLabel,
-            style: context.text.bodyMedium?.copyWith(color: context.colors.primary, fontSize: 13),
+            style: context.text.bodyMedium?.copyWith(
+              color: context.colors.primary,
+              fontSize: 13,
+            ),
           ),
         ),
       ],

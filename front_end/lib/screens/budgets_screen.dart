@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../models/budget.dart';
@@ -8,7 +7,6 @@ import '../models/category.dart';
 import '../core/theme/app_colors.dart';
 import '../widgets/transaction_row.dart' show categoryIcon;
 import '../core/theme/theme_x.dart';
-
 
 /// Budgets screen — one ledger card per budget: category, period, a
 /// progress bar colored by the backend's computed status, spent/remaining.
@@ -46,18 +44,20 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   }
 
   Future<void> _confirmDelete(BudgetEntry entry) async {
-    final confirmed = await showCupertinoDialog<bool>(
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
+      builder: (context) => AlertDialog(
         title: Text('Delete budget for "${entry.category.name}"?'),
         content: const Text('This can\'t be undone.'),
         actions: [
-          CupertinoDialogAction(
+          TextButton(
             child: const Text('Cancel'),
             onPressed: () => Navigator.of(context).pop(false),
           ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: context.colors.error,
+            ),
             child: const Text('Delete'),
             onPressed: () => Navigator.of(context).pop(true),
           ),
@@ -76,8 +76,10 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   Future<void> _showAddBudgetSheet() async {
     if (widget.expenseCategories.isEmpty) return;
 
-    final created = await showCupertinoModalPopup<BudgetCreate>(
+    final created = await showModalBottomSheet<BudgetCreate>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) =>
           _AddBudgetSheet(categories: widget.expenseCategories),
     );
@@ -118,25 +120,24 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
   @override
   Widget build(BuildContext context) {
-
-    return CupertinoPageScaffold(
+    return Scaffold(
       backgroundColor: context.colors.surface,
-      child: CustomScrollView(
+      body: CustomScrollView(
         slivers: [
-          CupertinoSliverNavigationBar(
+          SliverAppBar.large(
             backgroundColor: context.colors.surface,
-            border: null,
-            largeTitle: const Text('Budgets'),
-            trailing: CupertinoButton(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(32, 32),
-              onPressed: _showAddBudgetSheet,
-              child: Icon(
-                CupertinoIcons.add_circled_solid,
-                color: context.colors.primary,
-                size: 28,
+            scrolledUnderElevation: 0,
+            title: const Text('Budgets'),
+            actions: [
+              IconButton(
+                onPressed: _showAddBudgetSheet,
+                icon: Icon(
+                  Icons.add_circle_rounded,
+                  color: context.colors.primary,
+                  size: 28,
+                ),
               ),
-            ),
+            ],
           ),
           if (_entries.isEmpty)
             SliverFillRemaining(
@@ -202,7 +203,6 @@ class _BudgetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final spent = double.tryParse(entry.status.spentAmount) ?? 0;
     final limit = double.tryParse(entry.budget.amount) ?? 1;
     final fraction = limit > 0 ? (spent / limit).clamp(0.0, 1.2) : 0.0;
@@ -211,7 +211,7 @@ class _BudgetCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: context.colors.surface, 
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: context.colors.outlineVariant),
       ),
@@ -231,7 +231,7 @@ class _BudgetCard extends StatelessWidget {
                 child: Icon(
                   categoryIcon(entry.category.icon),
                   size: 15,
-                  color: context.colors.primary, 
+                  color: context.colors.primary,
                 ),
               ),
               const SizedBox(width: 10),
@@ -250,12 +250,12 @@ class _BudgetCard extends StatelessWidget {
                   ],
                 ),
               ),
-              CupertinoButton(
+              IconButton(
                 padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 onPressed: onDelete,
-                child: Icon(
-                  CupertinoIcons.ellipsis_circle,
+                icon: Icon(
+                  Icons.more_horiz_rounded,
                   size: 20,
                   color: context.colors.outline,
                 ),
@@ -295,7 +295,7 @@ class _BudgetCard extends StatelessWidget {
                 style: context.text.headlineMedium?.copyWith(
                   fontSize: 13,
                   color: remaining >= 0
-                      ? context.colors.onSurfaceVariant 
+                      ? context.colors.onSurfaceVariant
                       : context.finance.expense,
                 ),
               ),
@@ -313,7 +313,6 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -321,7 +320,7 @@ class _EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              CupertinoIcons.chart_bar_alt_fill,
+              Icons.bar_chart_rounded,
               size: 32,
               color: context.colors.outline,
             ),
@@ -337,14 +336,18 @@ class _EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 18),
-            CupertinoButton(
-              color: context.colors.primary,
-              borderRadius: BorderRadius.circular(8),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: context.colors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               onPressed: onAdd,
               child: Text(
                 'Add Budget',
                 style: context.text.bodyMedium?.copyWith(
-                  color: CupertinoColors.white,
+                  color: context.colors.onPrimary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -430,21 +433,27 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
   }
 
   Future<void> _pickCategory() async {
-
-    final picked = await showCupertinoModalPopup<Category>(
+    final picked = await showModalBottomSheet<Category>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: Text('Category', style: context.text.labelMedium),
-        actions: [
-          for (final category in widget.categories)
-            CupertinoActionSheetAction(
-              onPressed: () => Navigator.of(context).pop(category),
-              child: Text(category.name, style: context.text.bodyMedium),
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Text('Category', style: context.text.titleMedium),
             ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+            for (final category in widget.categories)
+              ListTile(
+                title: Text(category.name, style: context.text.bodyMedium),
+                trailing: _category.id == category.id
+                    ? Icon(Icons.check_rounded,
+                        size: 16, color: context.colors.primary)
+                    : null,
+                onTap: () => Navigator.of(context).pop(category),
+              ),
+          ],
         ),
       ),
     );
@@ -452,98 +461,49 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
   }
 
   Future<void> _pickStartDate() async {
-
-    await showCupertinoModalPopup(
+    final picked = await showDatePicker(
       context: context,
-      builder: (context) => Container(
-        height: 260,
-        color: context.colors.surface,
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  CupertinoButton(
-                    child: const Text('Done'),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-              Expanded(
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.date,
-                  initialDateTime: _start,
-                  onDateTimeChanged: (value) => setState(() {
-                    _start = value;
-                    if (_customEnd.isBefore(_start)) {
-                      _customEnd = _start.add(const Duration(days: 29));
-                    }
-                  }),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      initialDate: _start,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
     );
+    if (picked == null) return;
+    setState(() {
+      _start = picked;
+      if (_customEnd.isBefore(_start)) {
+        _customEnd = _start.add(const Duration(days: 29));
+      }
+    });
   }
 
   Future<void> _pickEndDate() async {
-
-    await showCupertinoModalPopup(
+    final picked = await showDatePicker(
       context: context,
-      builder: (context) => Container(
-        height: 260,
-        color: context.colors.surface,
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  CupertinoButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Done'),
-                  ),
-                ],
-              ),
-              Expanded(
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.date,
-                  initialDateTime: _customEnd.isBefore(_start)
-                      ? _start
-                      : _customEnd,
-                  minimumDate: _start,
-                  onDateTimeChanged: (value) =>
-                      setState(() => _customEnd = value),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      initialDate: _customEnd.isBefore(_start) ? _start : _customEnd,
+      firstDate: _start,
+      lastDate: DateTime(2100),
     );
+    if (picked != null) setState(() => _customEnd = picked);
   }
 
   Future<void> _pickMonthlyDay() async {
-
-    final day = await showCupertinoModalPopup<int>(
+    final day = await showModalBottomSheet<int>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: Text('Monthly start day', style: context.text.labelMedium),
-        actions: [
-          for (var value = 1; value <= 31; value++)
-            CupertinoActionSheetAction(
-              onPressed: () => Navigator.of(context).pop(value),
-              child: Text('Day $value', style: context.text.bodyMedium),
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Text('Monthly start day', style: context.text.titleMedium),
             ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+            for (var value = 1; value <= 31; value++)
+              ListTile(
+                title: Text('Day $value', style: context.text.bodyMedium),
+                onTap: () => Navigator.of(context).pop(value),
+              ),
+          ],
         ),
       ),
     );
@@ -571,99 +531,117 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       decoration: BoxDecoration(
         color: context.colors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
-                  ),
-                  Text(
-                    'New Budget',
-                    style: context.text.titleLarge?.copyWith(fontSize: 16),
-                  ),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: _canSave ? _handleSave : null,
-                    child: Text(
-                      'Add',
-                      style: TextStyle(
-                        color: _canSave
-                            ? context.colors.primary
-                            : context.colors.outline,
-                        fontWeight: FontWeight.w600,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    Text(
+                      'New Budget',
+                      style: context.text.titleLarge?.copyWith(fontSize: 16),
+                    ),
+                    TextButton(
+                      onPressed: _canSave ? _handleSave : null,
+                      child: Text(
+                        'Add',
+                        style: TextStyle(
+                          color: _canSave
+                              ? context.colors.primary
+                              : context.colors.outline,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              _SheetFieldRow(
-                label: 'Category',
-                onTap: _pickCategory,
-                child: Text(_category.name, style: context.text.bodyMedium),
-              ),
-              const Divider(),
-              _SheetFieldRow(
-                label: 'Amount',
-                child: CupertinoTextField(
-                  controller: _amountController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  placeholder: '0.00',
-                  prefix: Text('\$ ', style: context.text.headlineMedium?.copyWith(fontSize: 15)),
-                  padding: EdgeInsets.zero,
-                  decoration: const BoxDecoration(),
-                  style: context.text.headlineMedium?.copyWith(fontSize: 15),
-                  placeholderStyle: context.text.headlineMedium?.copyWith(
-                    fontSize: 15,
-                    color: context.colors.outline,
-                  ),
-                  onChanged: (_) => setState(() {}),
+                  ],
                 ),
-              ),
-              const Divider(),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Period', style: context.text.labelMedium),
-                          const SizedBox(height: 8),
-                          CupertinoSlidingSegmentedControl<BudgetPeriod>(
-                            backgroundColor: context.colors.surfaceContainerHigh,
-                            thumbColor: CupertinoColors.white,
-                            groupValue: _period,
-                            children: {
-                              BudgetPeriod.weekly: _segmentLabel(context, 'Week'),
-                              BudgetPeriod.monthly: _segmentLabel(context,'Month'),
-                              BudgetPeriod.yearly: _segmentLabel(context,'Year'),
-                              BudgetPeriod.custom: _segmentLabel(context,'Custom'),
-                            },
-                            onValueChanged: (value) {
-                              if (value != null) {
+                const SizedBox(height: 14),
+                _SheetFieldRow(
+                  label: 'Category',
+                  onTap: _pickCategory,
+                  child: Text(_category.name, style: context.text.bodyMedium),
+                ),
+                const Divider(height: 1),
+                _SheetFieldRow(
+                  label: 'Amount',
+                  child: TextField(
+                    controller: _amountController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    style: context.text.headlineMedium?.copyWith(fontSize: 15),
+                    decoration: InputDecoration(
+                      hintText: '0.00',
+                      hintStyle: context.text.headlineMedium?.copyWith(
+                        fontSize: 15,
+                        color: context.colors.outline,
+                      ),
+                      prefixText: '\$ ',
+                      prefixStyle:
+                          context.text.headlineMedium?.copyWith(fontSize: 15),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Period', style: context.text.labelMedium),
+                            const SizedBox(height: 8),
+                            SegmentedButton<BudgetPeriod>(
+                              showSelectedIcon: false,
+                              style: SegmentedButton.styleFrom(
+                                backgroundColor:
+                                    context.colors.surfaceContainerHigh,
+                              ),
+                              segments: [
+                                ButtonSegment(
+                                  value: BudgetPeriod.weekly,
+                                  label: _segmentLabel(context, 'Week'),
+                                ),
+                                ButtonSegment(
+                                  value: BudgetPeriod.monthly,
+                                  label: _segmentLabel(context, 'Month'),
+                                ),
+                                ButtonSegment(
+                                  value: BudgetPeriod.yearly,
+                                  label: _segmentLabel(context, 'Year'),
+                                ),
+                                ButtonSegment(
+                                  value: BudgetPeriod.custom,
+                                  label: _segmentLabel(context, 'Custom'),
+                                ),
+                              ],
+                              selected: {_period},
+                              onSelectionChanged: (selection) {
+                                final value = selection.first;
                                 setState(() {
                                   _period = value;
                                   if (value == BudgetPeriod.custom &&
@@ -673,74 +651,74 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                                     );
                                   }
                                 });
-                              }
-                            },
-                          ),
-                        ],
+                              },
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const Divider(),
-              _SheetFieldRow(
-                label: _period == BudgetPeriod.monthly ? 'Starts' : 'From',
-                onTap: _pickStartDate,
-                child: Text(
-                  '${_monthAbbr[_start.month - 1]} ${_start.day}, ${_start.year}',
-                  style: context.text.bodyMedium,
-                ),
-              ),
-              if (_period == BudgetPeriod.monthly) ...[
-                const Divider(),
+                const Divider(height: 1),
                 _SheetFieldRow(
-                  label: 'Monthly day',
-                  onTap: _pickMonthlyDay,
-                  child: Text('Day ${_start.day}', style: context.text.bodyMedium),
-                ),
-              ],
-              if (_period == BudgetPeriod.custom) ...[
-                const Divider(),
-                _SheetFieldRow(
-                  label: 'Until',
-                  onTap: _pickEndDate,
+                  label: _period == BudgetPeriod.monthly ? 'Starts' : 'From',
+                  onTap: _pickStartDate,
                   child: Text(
-                    '${_monthAbbr[_customEnd.month - 1]} ${_customEnd.day}, ${_customEnd.year}',
+                    '${_monthAbbr[_start.month - 1]} ${_start.day}, ${_start.year}',
                     style: context.text.bodyMedium,
                   ),
                 ),
-              ],
-              const Divider(),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Alert threshold', style: context.text.labelMedium),
-                        Text(
-                          _threshold == 0 ? 'Off' : '${_threshold.round()}%',
-                          style: context.text.headlineMedium?.copyWith(
-                            fontSize: 13,
-                            color: context.colors.primary,
+                if (_period == BudgetPeriod.monthly) ...[
+                  const Divider(height: 1),
+                  _SheetFieldRow(
+                    label: 'Monthly day',
+                    onTap: _pickMonthlyDay,
+                    child: Text('Day ${_start.day}', style: context.text.bodyMedium),
+                  ),
+                ],
+                if (_period == BudgetPeriod.custom) ...[
+                  const Divider(height: 1),
+                  _SheetFieldRow(
+                    label: 'Until',
+                    onTap: _pickEndDate,
+                    child: Text(
+                      '${_monthAbbr[_customEnd.month - 1]} ${_customEnd.day}, ${_customEnd.year}',
+                      style: context.text.bodyMedium,
+                    ),
+                  ),
+                ],
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Alert threshold', style: context.text.labelMedium),
+                          Text(
+                            _threshold == 0 ? 'Off' : '${_threshold.round()}%',
+                            style: context.text.headlineMedium?.copyWith(
+                              fontSize: 13,
+                              color: context.colors.primary,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    CupertinoSlider(
-                      value: _threshold,
-                      min: 0,
-                      max: 100,
-                      divisions: 20,
-                      activeColor: context.colors.primary,
-                      onChanged: (value) => setState(() => _threshold = value),
-                    ),
-                  ],
+                        ],
+                      ),
+                      Slider(
+                        value: _threshold,
+                        min: 0,
+                        max: 100,
+                        divisions: 20,
+                        activeColor: context.colors.primary,
+                        onChanged: (value) => setState(() => _threshold = value),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -748,7 +726,6 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
   }
 
   Widget _segmentLabel(BuildContext context, String text) {
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Text(
@@ -768,7 +745,6 @@ class _SheetFieldRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final row = Padding(
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
@@ -777,7 +753,7 @@ class _SheetFieldRow extends StatelessWidget {
           Expanded(child: child),
           if (onTap != null)
             Icon(
-              CupertinoIcons.chevron_right,
+              Icons.chevron_right_rounded,
               size: 14,
               color: context.colors.outline,
             ),
@@ -785,9 +761,8 @@ class _SheetFieldRow extends StatelessWidget {
       ),
     );
     if (onTap == null) return row;
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
+    return InkWell(
+      onTap: onTap,
       child: row,
     );
   }
