@@ -124,17 +124,18 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
       backgroundColor: context.colors.surface,
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.large(
+          SliverAppBar(
             backgroundColor: context.colors.surface,
             scrolledUnderElevation: 0,
             title: const Text('Budgets'),
+            pinned: true,
             actions: [
               IconButton(
                 onPressed: _showAddBudgetSheet,
                 icon: Icon(
                   Icons.add_circle_rounded,
                   color: context.colors.primary,
-                  size: 28,
+                  size: 36,
                 ),
               ),
             ],

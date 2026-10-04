@@ -108,7 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           CustomScrollView(
             slivers: [
-              SliverAppBar.large(
+              SliverAppBar(
                 backgroundColor: context.colors.surface,
                 scrolledUnderElevation: 0,
                 title: const Text('Overview'),

@@ -91,7 +91,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       backgroundColor: context.colors.surface,
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.large(
+          SliverAppBar(
             backgroundColor: context.colors.surface,
             scrolledUnderElevation: 0,
             title: const Text('Transactions'),

@@ -122,7 +122,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          const SliverAppBar.large(title: Text('Reports')),
+          const SliverAppBar(title: Text('Reports')),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
