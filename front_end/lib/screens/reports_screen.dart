@@ -11,7 +11,6 @@ import '../core/theme/theme_x.dart';
 enum _ReportRange { month, quarter, year }
 
 
-
 /// Multi-category chart palette. Was a `const` list, but theme colors are
 /// runtime values, so it's now a function. The fixed hues stay muted/warm.
 List<Color> _chartPalette(ColorScheme colors, FinanceColors finance) => [
@@ -46,7 +45,6 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   _ReportRange _range = _ReportRange.month;
 
-  // Was a hardcoded DateTime(2026, 9, 3), which goes stale immediately.
   DateTime get _now => DateTime.now();
 
   DateTime get _rangeStart {
@@ -300,7 +298,7 @@ class _SummaryStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
+    final sign = value < 0 ? '-' : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -311,11 +309,14 @@ class _SummaryStat extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-          AmountText(
-              value.abs().toStringAsFixed(2),
-              size: 18,
-              colorBySign: false, // uses context.colors.onSurface, which is what you wanted
-            ),
+        Text(
+          '$sign\$${value.abs().toStringAsFixed(0)}',
+          style: context.text.titleMedium?.copyWith(
+            color: color,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
@@ -362,7 +363,7 @@ class _CategoryBreakdownRow extends StatelessWidget {
           AmountText(
             amount.toStringAsFixed(2),
             size: 13,
-            colorBySign: false, // uses context.colors.onSurface, which is what you wanted
+            colorBySign: false, 
           ),
         ],
       ),
