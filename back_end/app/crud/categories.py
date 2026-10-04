@@ -3,7 +3,12 @@ from sqlalchemy.orm import Session
 
 from app.models.categories import Category
 from app.models.transactions import TransactionType
+from sqlalchemy import func, or_, select
+from sqlalchemy.orm import Session
 
+from app.models.budgets import Budget
+from app.models.categories import Category
+from app.models.transactions import Transaction, TransactionType
 
 DEFAULT_CATEGORIES = [
     "Food",
@@ -21,10 +26,7 @@ DEFAULT_INCOME_CATEGORIES = [
     "Income",
 ]
 
-def list_categories(
-    db: Session,
-    user_id: int,
-) -> list[Category]:
+def list_categories(db: Session, user_id: int,) -> list[Category]:
     
     statement = (
         select(Category)
@@ -62,11 +64,7 @@ def create_category(
 
     return category
 
-def get_category(
-    db: Session,
-    category_id: int,
-    user_id: int,
-) -> Category | None:
+def get_category(db: Session, category_id: int, user_id: int,) -> Category | None:
     """Fetch a single category by id, scoped to the user (or global defaults)."""
     statement = (
         select(Category)
@@ -81,15 +79,31 @@ def get_category(
 
     return db.scalar(statement)
 
-def get_categories(
-    db: Session,
-    user_id: int,
-) -> list[Category]:
+def get_categories(db: Session, user_id: int,) -> list[Category]:
     """Fetch all categories visible to the user: their own + global defaults."""
     statement = select(Category).where(
         (Category.user_id == user_id) | (Category.user_id.is_(None))
     )
     return list(db.scalars(statement).all())
+
+def get_category_usage(db: Session, category_id: int) -> tuple[int, int]:
+    """Return (transaction_count, budget_count) referencing this category.
+
+    Counts across all users on purpose: a user-owned category is only ever
+    used by its owner, so this is equivalent, and it stays correct if that
+    ever changes.
+    """
+    transaction_count = db.scalar(
+        select(func.count())
+        .select_from(Transaction)
+        .where(Transaction.category_id == category_id)
+    )
+    budget_count = db.scalar(
+        select(func.count())
+        .select_from(Budget)
+        .where(Budget.category_id == category_id)
+    )
+    return transaction_count or 0, budget_count or 0
 
 def delete_category(
     db: Session,

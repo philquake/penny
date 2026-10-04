@@ -9,8 +9,6 @@ import '../models/category.dart';
 import '../models/transactions.dart';
 import '../services/budget_notification_service.dart';
 import 'session.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
-import '../models/transaction_type.dart';
 
 final categoriesRepositoryProvider =
     Provider((ref) => CategoriesRepository(ref.watch(apiClientProvider)));
@@ -112,27 +110,13 @@ class BudgetsController extends StateNotifier<AsyncValue<List<BudgetEntry>>> {
         final status = await _repo.status(budget.id);
 
         final match = categories.where((c) => c.id == budget.categoryId);
-        final category = match.isNotEmpty
-            ? match.first
-            : () {
-                debugPrint(
-                  'Budget ${budget.id} references missing category ${budget.categoryId}',
-                );
-                return Category(
-                  id: budget.categoryId,
-                  userId: null,
-                  name: 'Unknown category',
-                  type: TransactionType.expense,
-                  icon: null,
-                  isDefault: false,
-                );
-              }();
+        if (match.isEmpty) continue;
 
-        final entry = BudgetEntry(budget, status, category);
+        final entry = BudgetEntry(budget, status, match.first);
         entries.add(entry);
         await BudgetNotificationService.instance.updateBudget(entry);
       }
-      return entries;
+            return entries;
     });
   }
 

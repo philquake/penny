@@ -5,7 +5,7 @@ import '../widgets/transaction_row.dart' show categoryIcon;
 
 import 'package:flutter/material.dart';
 import '../core/theme/theme_x.dart';
-
+import 'package:dio/dio.dart';
 
 /// Categories screen — grouped by type (Expense/Income), the way budgets
 /// and the transaction filters both key off type already.
@@ -16,7 +16,7 @@ import '../core/theme/theme_x.dart';
 class CategoriesScreen extends StatefulWidget {
   final List<Category> categories;
   final void Function(CategoryCreate) onCreate;
-  final void Function(int id) onDelete;
+  final Future<void> Function(int id) onDelete;
 
   const CategoriesScreen({
     super.key,
@@ -31,11 +31,19 @@ class CategoriesScreen extends StatefulWidget {
 
 class _CategoriesScreenState extends State<CategoriesScreen> {
   late List<Category> _categories;
-
+  
   @override
   void initState() {
     super.initState();
     _categories = List.of(widget.categories);
+  }
+  
+  String _errorMessage(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map && data['detail'] is String) return data['detail'] as String;
+    }
+    return 'Something went wrong. Please try again.';
   }
 
   List<Category> _byType(TransactionType type) =>
@@ -48,9 +56,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       builder: (context) => CupertinoAlertDialog(
         title: Text('Delete "${category.name}"?'),
         content: const Text(
-          'Existing transactions in this category will keep their record, '
-          'but you won\'t be able to pick it for new ones.',
-        ),
+        'This can\'t be undone. Categories that still have transactions '
+        'or budgets can\'t be deleted.',
+      ),
         actions: [
           CupertinoDialogAction(
             child: const Text('Cancel'),
@@ -65,9 +73,27 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       ),
     );
 
-    if (confirmed == true) {
+        if (confirmed != true) return;
+
+    try {
+      await widget.onDelete(category.id);
+      if (!mounted) return;
       setState(() => _categories.removeWhere((c) => c.id == category.id));
-      widget.onDelete(category.id);
+    } catch (error) {
+      if (!mounted) return;
+      await showCupertinoDialog<void>(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Can\'t delete category'),
+          content: Text(_errorMessage(error)),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
