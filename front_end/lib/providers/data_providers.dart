@@ -9,6 +9,8 @@ import '../models/category.dart';
 import '../models/transactions.dart';
 import '../services/budget_notification_service.dart';
 import 'session.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
+import '../models/transaction_type.dart';
 
 final categoriesRepositoryProvider =
     Provider((ref) => CategoriesRepository(ref.watch(apiClientProvider)));
@@ -87,10 +89,7 @@ final transactionsProvider =
 /// (GET /budgets/{id}/status) and zips them with the resolved Category
 /// into the BudgetEntry shape BudgetsScreen/DashboardScreen expect.
 ///
-/// NOTE: GET /budgets currently 500s and DELETE /budgets/{id} currently
-/// always 404s — see data/budgets_repository.dart for the two backend
-/// bugs causing that. This controller is written against the intended
-/// contract and will work once those are fixed.
+
 class BudgetsController extends StateNotifier<AsyncValue<List<BudgetEntry>>> {
   final BudgetsRepository _repo;
   final Ref _ref;
@@ -100,18 +99,36 @@ class BudgetsController extends StateNotifier<AsyncValue<List<BudgetEntry>>> {
   }
 
   Future<void> refresh() async {
+    final categoriesState = _ref.read(categoriesProvider);
+    if (!categoriesState.hasValue) return; // wait; the listener below re-triggers us
+
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final budgets = await _repo.list();
-      final categories =
-          _ref.read(categoriesProvider).asData?.value ?? const <Category>[];
+      final categories = categoriesState.value!;
 
       final entries = <BudgetEntry>[];
       for (final budget in budgets) {
         final status = await _repo.status(budget.id);
-        final category = categories.where((c) => c.id == budget.categoryId);
-        if (category.isEmpty) continue;
-        final entry = BudgetEntry(budget, status, category.first);
+
+        final match = categories.where((c) => c.id == budget.categoryId);
+        final category = match.isNotEmpty
+            ? match.first
+            : () {
+                debugPrint(
+                  'Budget ${budget.id} references missing category ${budget.categoryId}',
+                );
+                return Category(
+                  id: budget.categoryId,
+                  userId: null,
+                  name: 'Unknown category',
+                  type: TransactionType.expense,
+                  icon: null,
+                  isDefault: false,
+                );
+              }();
+
+        final entry = BudgetEntry(budget, status, category);
         entries.add(entry);
         await BudgetNotificationService.instance.updateBudget(entry);
       }
@@ -131,6 +148,13 @@ class BudgetsController extends StateNotifier<AsyncValue<List<BudgetEntry>>> {
 }
 
 final budgetsProvider =
-    StateNotifierProvider<BudgetsController, AsyncValue<List<BudgetEntry>>>(
-  (ref) => BudgetsController(ref.watch(budgetsRepositoryProvider), ref),
-);
+    StateNotifierProvider<BudgetsController, AsyncValue<List<BudgetEntry>>>((ref) {
+  final controller =
+      BudgetsController(ref.watch(budgetsRepositoryProvider), ref);
+
+  ref.listen<AsyncValue<List<Category>>>(categoriesProvider, (prev, next) {
+    if (next.hasValue) controller.refresh();
+  });
+
+  return controller;
+});
