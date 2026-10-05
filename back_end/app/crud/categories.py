@@ -135,3 +135,10 @@ def seed_default_categories(db: Session) -> None:
             category.is_default = True
 
     db.commit()
+    
+def update_category(db: Session, category: Category, **fields) -> Category:
+    for key, value in fields.items():
+        setattr(category, key, value)
+    db.commit()
+    db.refresh(category)
+    return category

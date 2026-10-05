@@ -41,6 +41,13 @@ class CategoriesController extends StateNotifier<AsyncValue<List<Category>>> {
       (list) => list.where((c) => c.id != id).toList(),
     );
   }
+
+  Future<void> update(int id, CategoryUpdate data) async {
+  final updated = await _repo.update(id, data);
+  state = state.whenData(
+    (list) => [for (final c in list) c.id == id ? updated : c],
+  );
+}
 }
 
 final categoriesProvider =

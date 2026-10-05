@@ -5,12 +5,14 @@ class CategoryCreate {
   final TransactionType type;
   final String? icon;
   final bool isDefault;
+  final String? color;
 
   const CategoryCreate({
     required this.name,
     required this.type,
     this.icon,
     this.isDefault = false,
+    this.color,
   });
 
   Map<String, dynamic> toJson() {
@@ -19,6 +21,7 @@ class CategoryCreate {
       'type': type.value,
       'icon': icon,
       'is_default': isDefault,
+      'color': color,
     };
   }
 }
@@ -30,7 +33,7 @@ class Category {
   final TransactionType type;
   final String? icon;
   final bool isDefault;
-
+  final String? color;
   const Category({
     required this.id,
     required this.userId,
@@ -38,6 +41,7 @@ class Category {
     required this.type,
     required this.icon,
     required this.isDefault,
+    required this.color,
   });
 
   factory Category.fromJson(Map<String, dynamic> json) {
@@ -50,6 +54,7 @@ class Category {
       ),
       icon: json['icon'] as String?,
       isDefault: json['is_default'] as bool,
+      color: json['color'] as String?,
     );
   }
 
@@ -65,3 +70,13 @@ class Category {
   }
 }
 
+class CategoryUpdate {
+  final String? name;
+  final String? color;
+  const CategoryUpdate({this.name, this.color});
+
+  Map<String, dynamic> toJson() => {
+        if (name != null) 'name': name,
+        if (color != null) 'color': color,
+      };
+}

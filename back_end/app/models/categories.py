@@ -31,6 +31,10 @@ class Category(Base):
         String(50),
         nullable=True,
     )
+    
+    color: Mapped[str | None] = mapped_column(
+        String(7), nullable=True
+        )  # "#RRGGBB"
 
     is_default: Mapped[bool] = mapped_column(
         Boolean,

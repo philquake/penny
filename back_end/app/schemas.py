@@ -2,9 +2,10 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
-
+from typing import Annotated
 from app.models.budgets import BudgetPeriod
 from app.models.transactions import TransactionType
+from pydantic import StringConstraints
 
 class UserCreate(BaseModel):
     email: str
@@ -113,3 +114,29 @@ class TrendBucket(BaseModel):
     month: str  # "2026-08"
     income: Decimal
     expense: Decimal
+    
+    
+HexColor = Annotated[str, StringConstraints(pattern=r"^#[0-9A-Fa-f]{6}$")]
+
+class CategoryCreate(BaseModel):
+    name: str
+    type: TransactionType
+    icon: str | None = None
+    color: HexColor | None = None
+    is_default: bool = False
+
+class CategoryUpdate(BaseModel):
+    name: str | None = None
+    icon: str | None = None
+    color: HexColor | None = None
+
+class CategoryOut(BaseModel):
+    id: int
+    user_id: int | None
+    name: str
+    type: TransactionType
+    icon: str | None
+    color: str | None
+    is_default: bool
+
+    model_config = ConfigDict(from_attributes=True)

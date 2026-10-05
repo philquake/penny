@@ -4,13 +4,14 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.core.deps import get_current_user
 from app.models import User
-from app.schemas import CategoryCreate, CategoryOut
+from app.schemas import CategoryCreate, CategoryOut, CategoryUpdate
 from app.crud.categories import (
     create_category,
     get_category,
     get_categories,
     delete_category,
     get_category_usage,
+    update_category,
 )
 
 
@@ -86,3 +87,19 @@ def remove_category(
 
     delete_category(db=db, category=category)
     
+def _own_category_or_404(db, category_id, user):
+    category = get_category(db, category_id=category_id, user_id=user.id)
+    # Defaults (user_id None) are shared by everyone, so they stay read-only.
+    if category is None or category.user_id != user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Category not found")
+    return category
+
+@router.put("/{category_id}", response_model=CategoryOut)
+def update_existing_category(category_id: int,
+                            data: CategoryUpdate,
+                            db: Session = Depends(get_db),
+                            current_user: User = Depends(get_current_user)):
+    category = _own_category_or_404(db, category_id, current_user)
+    return update_category(db, category, **data.model_dump(exclude_unset=True))
+
+

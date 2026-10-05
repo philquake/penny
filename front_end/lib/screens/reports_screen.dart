@@ -1,30 +1,16 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import '../core/theme/app_colors.dart'; 
+import '../core/theme/chart_colors.dart';
 import '../models/category.dart';
+import '../models/category_breakdown_item.dart';
 import '../models/transaction_type.dart';
 import '../models/transactions.dart';
 import '../core/widgets/amount_text.dart';
 import '../core/theme/theme_x.dart';
+import '../core/widgets/category_breakdown_chart.dart';
 
 enum _ReportRange { month, quarter, year }
-
-
-/// Multi-category chart palette. Was a `const` list, but theme colors are
-/// runtime values, so it's now a function. The fixed hues stay muted/warm.
-List<Color> _chartPalette(ColorScheme colors, FinanceColors finance) => [
-  colors.primary,                // Emerald
-const Color(0xFF7A6A9C),       // Dusty plum
-const Color(0xFFB99A3E),       // Muted ochre
-const Color(0xFF4A7A8C),       // Dusty teal
-const Color(0xFFC94B4B),       // Coral
-const Color(0xFF8C6F52),       // Warm taupe
-const Color(0xFF5267A9),       // Slate blue
-const Color(0xFF4D9078),       // Sage
-const Color(0xFFD9827B),       // Muted rose
-const Color(0xFF356B7A),       // Deep ocean
-];
 
 /// Reports screen: spending composition and an income/expense trend.
 /// Aggregates client-side (no /reports consumption yet).
@@ -77,13 +63,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
       .where((t) => t.type == TransactionType.expense)
       .fold(0.0, (sum, t) => sum + _amount(t));
 
-  /// categoryId -> total spent, expenses only, sorted descending.
-  List<MapEntry<int, double>> get _expenseByCategory {
+  /// Expenses grouped by category, sorted descending. Same shape as the
+  /// backend's /reports/by-category items, so swapping to the endpoint later
+  /// only means replacing this getter.
+  List<CategoryBreakdownItem> get _breakdown {
     final totals = <int, double>{};
     for (final t in _inRange.where((t) => t.type == TransactionType.expense)) {
       totals[t.categoryId] = (totals[t.categoryId] ?? 0) + _amount(t);
     }
-    return totals.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final items = totals.entries
+        .map(
+          (e) => CategoryBreakdownItem(
+            categoryId: e.key,
+            categoryName: _categoryFor(e.key)?.name ?? 'Uncategorized',
+            total: e.value,
+            colorHex: _categoryFor(e.key)?.color,
+          ),
+        )
+        .toList()
+      ..sort((a, b) => b.total.compareTo(a.total));
+    return items;
   }
 
   /// Last 6 calendar months of income/expense totals, oldest first.
@@ -114,9 +113,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final finance = context.finance;
-    final palette = _chartPalette(colors, finance);
 
-    final breakdown = _expenseByCategory;
+    final breakdown = _breakdown;
     final net = _totalIncome - _totalExpenses;
 
     return Scaffold(
@@ -182,60 +180,31 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     style: context.text.titleMedium,
                   ),
                   const SizedBox(height: 16),
-                  if (breakdown.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Center(
-                        child: Text(
-                          'No expenses in this period',
-                          style: context.text.bodySmall?.copyWith(
-                            color: context.colors.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    )
-                  else ...[
-                    SizedBox(
-                      height: 180,
-                      child: PieChart(
-                        PieChartData(
-                          sectionsSpace: 2,
-                          centerSpaceRadius: 44,
-                          sections: [
-                            for (int i = 0; i < breakdown.length; i++)
-                              PieChartSectionData(
-                                value: breakdown[i].value,
-                                color: palette[i % palette.length],
-                                radius: 34,
-                                showTitle: false,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  CategoryBreakdownChart(items: breakdown),
+                  if (breakdown.isNotEmpty) ...[
                     const SizedBox(height: 20),
                     Container(
                       decoration: BoxDecoration(
-                        color: context.colors.surface,
+                        color: colors.surface,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: context.colors.outlineVariant),
+                        border: Border.all(color: colors.outlineVariant),
                       ),
                       child: Column(
                         children: [
                           for (int i = 0; i < breakdown.length; i++) ...[
                             _CategoryBreakdownRow(
-                              category: _categoryFor(breakdown[i].key),
-                              amount: breakdown[i].value,
+                              name: breakdown[i].categoryName,
+                              amount: breakdown[i].total,
                               percent: _totalExpenses > 0
-                                  ? breakdown[i].value / _totalExpenses
+                                  ? breakdown[i].total / _totalExpenses
                                   : 0,
-                              color: palette[i % palette.length],
+                              color: categoryColor(breakdown[i].categoryId, hex: breakdown[i].colorHex),
                             ),
                             if (i != breakdown.length - 1)
                               Divider(
                                 height: 1,
                                 indent: 40,
-                                color: context.colors.outlineVariant,
+                                color: colors.outlineVariant,
                               ),
                           ],
                         ],
@@ -251,7 +220,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   Text(
                     'Last 6 months',
                     style: context.text.bodySmall?.copyWith(
-                      color: context.colors.onSurfaceVariant,
+                      color: colors.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -323,13 +292,13 @@ class _SummaryStat extends StatelessWidget {
 }
 
 class _CategoryBreakdownRow extends StatelessWidget {
-  final Category? category;
+  final String name;
   final double amount;
   final double percent;
   final Color color;
 
   const _CategoryBreakdownRow({
-    required this.category,
+    required this.name,
     required this.amount,
     required this.percent,
     required this.color,
@@ -348,10 +317,7 @@ class _CategoryBreakdownRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              category?.name ?? 'Uncategorized',
-              style: context.text.bodyMedium,
-            ),
+            child: Text(name, style: context.text.bodyMedium),
           ),
           Text(
             '${(percent * 100).round()}%',
@@ -363,7 +329,7 @@ class _CategoryBreakdownRow extends StatelessWidget {
           AmountText(
             amount.toStringAsFixed(2),
             size: 13,
-            colorBySign: false, 
+            colorBySign: false,
           ),
         ],
       ),
@@ -451,7 +417,6 @@ class _LegendDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

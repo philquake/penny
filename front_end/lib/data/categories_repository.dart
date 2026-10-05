@@ -21,4 +21,9 @@ class CategoriesRepository {
   Future<void> delete(int id) async {
     await _client.dio.delete('/categories/$id');
   }
+
+  Future<Category> update(int id, CategoryUpdate data) async {
+  final response = await _client.dio.put('/categories/$id', data: data.toJson());
+  return Category.fromJson(response.data as Map<String, dynamic>);
+}
 }
