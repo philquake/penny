@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:penny/screens/login_screen.dart';
@@ -8,7 +8,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      CupertinoApp(
+      MaterialApp(
         home: LoginScreen(
           onSignIn: ({required email, required password}) async => null,
         ),
