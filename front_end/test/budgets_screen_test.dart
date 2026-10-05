@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:penny/models/budget.dart';
 import 'package:penny/models/budget_entry.dart';
@@ -37,10 +37,11 @@ void main() {
         type: TransactionType.expense,
         icon: null,
         isDefault: true,
+        color: null,
       ),
     );
 
-    Widget screen(List<BudgetEntry> entries) => CupertinoApp(
+    Widget screen(List<BudgetEntry> entries) => MaterialApp(
       home: BudgetsScreen(
         entries: entries,
         expenseCategories: const [],
@@ -56,7 +57,7 @@ void main() {
     expect(find.text('No budgets yet'), findsOneWidget);
     expect(
       tester.widget<Text>(find.text('Add Budget')).style?.color,
-      CupertinoColors.white,
+      Colors.white,
     );
   });
 }

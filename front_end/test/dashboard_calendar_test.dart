@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:penny/models/transaction_type.dart';
 import 'package:penny/models/transactions.dart';
@@ -11,7 +11,7 @@ void main() {
     var budgetsOpened = false;
 
     await tester.pumpWidget(
-      CupertinoApp(
+      MaterialApp(
         home: DashboardScreen(
           categories: const [],
           transactions: const [],
@@ -47,7 +47,7 @@ void main() {
         );
 
     await tester.pumpWidget(
-      CupertinoApp(
+      MaterialApp(
         home: DashboardScreen(
           categories: const [],
           transactions: [

@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:penny/screens/dashboard_screen.dart';
 
@@ -7,7 +7,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      CupertinoApp(
+      MaterialApp(
         home: DashboardScreen(
           categories: const [],
           transactions: const [],
