@@ -2,6 +2,8 @@ enum TransactionType {
   income,
   expense,
   transfer,
+  savings,
+  debt,
 }
 
 extension TransactionTypeExtension on TransactionType {
@@ -13,6 +15,10 @@ extension TransactionTypeExtension on TransactionType {
         return 'expense';
       case TransactionType.transfer:
         return 'transfer';
+      case TransactionType.savings:
+        return 'savings';
+      case TransactionType.debt:
+        return 'debt';
     }
   }
 
@@ -24,6 +30,10 @@ extension TransactionTypeExtension on TransactionType {
         return TransactionType.expense;
       case 'transfer':
         return TransactionType.transfer;
+      case 'savings':
+        return TransactionType.savings;
+      case 'debt':
+        return TransactionType.debt;
       default:
         throw ArgumentError(
           'Unknown transaction type: $value',
