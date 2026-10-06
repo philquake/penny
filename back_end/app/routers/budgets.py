@@ -17,7 +17,6 @@ from app.crud.categories import (
 from app.db.database import get_db
 from app.models import User
 from app.models.budgets import BudgetPeriod
-from app.models.categories import get_category
 from app.models.transactions import TransactionType
 from app.schemas import BudgetCreate, BudgetOut, BudgetStatus, BudgetUpdate
 
