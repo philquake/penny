@@ -66,19 +66,25 @@ class TransactionsController
     refresh();
   }
 
-  Future<void> refresh() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _repo.list());
+  Future<void> refresh({bool silent = false}) async {
+    if (!silent) state = const AsyncValue.loading();
+    final next = await AsyncValue.guard(() => _repo.list());
+    if (!mounted) return;
+    if (silent && next.hasError) return; 
+    state = next;
   }
 
   Future<void> _afterMutation() async {
-    await refresh();
-    await _ref.read(budgetsProvider.notifier).refresh(silent: true);
+    await Future.wait([
+      refresh(silent: true),
+      _ref.read(budgetsProvider.notifier).refresh(silent: true),
+    ]);
   }
+
 
   Future<void> create(TransactionCreate data) async {
     await _repo.create(data);
-    await refresh();
+    await _afterMutation();
   }
 
   Future<void> update(int id, TransactionUpdate data) async {
@@ -89,7 +95,7 @@ class TransactionsController
   Future<void> delete(int id) async {
     await _repo.delete(id);
     state = state.whenData((list) => list.where((t) => t.id != id).toList());
-    await _ref.read(budgetsProvider.notifier).refresh(silent: true);
+    await _afterMutation();
   }
 }
 
