@@ -55,8 +55,9 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     final existing = widget.existing;
     _type = existing?.type ?? TransactionType.expense;
     _amountController = TextEditingController(text: existing?.amount ?? '');
-    _descriptionController =
-        TextEditingController(text: existing?.description ?? '');
+    _descriptionController = TextEditingController(
+      text: existing?.description ?? '',
+    );
     _date = existing?.transactionDate ?? DateTime.now();
 
     if (existing != null) {
@@ -149,11 +150,13 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
 
       if (parsed.amount != null) {
         _amountController.text = parsed.amount!;
-        _amountController.selection =
-            TextSelection.collapsed(offset: _amountController.text.length);
+        _amountController.selection = TextSelection.collapsed(
+          offset: _amountController.text.length,
+        );
       }
 
-      if (parsed.merchant != null && _descriptionController.text.trim().isEmpty) {
+      if (parsed.merchant != null &&
+          _descriptionController.text.trim().isEmpty) {
         _descriptionController.text = parsed.merchant!;
       }
 
@@ -161,7 +164,9 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
         setState(() => _date = parsed.date!);
       }
 
-      if (parsed.amount != null || parsed.merchant != null || parsed.date != null) {
+      if (parsed.amount != null ||
+          parsed.merchant != null ||
+          parsed.date != null) {
         await showDialog<void>(
           context: context,
           builder: (context) => AlertDialog(
@@ -223,12 +228,18 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
             ),
             for (final category in options)
               ListTile(
-                leading: Icon(categoryIcon(category.icon),
-                    size: 18, color: context.colors.onPrimaryContainer),
+                leading: Icon(
+                  categoryIcon(category.icon),
+                  size: 18,
+                  color: context.colors.onPrimaryContainer,
+                ),
                 title: Text(category.name, style: context.text.bodyMedium),
                 trailing: _category?.id == category.id
-                    ? Icon(Icons.check_rounded,
-                        size: 16, color: context.colors.primary)
+                    ? Icon(
+                        Icons.check_rounded,
+                        size: 16,
+                        color: context.colors.primary,
+                      )
                     : null,
                 onTap: () => Navigator.of(context).pop(category),
               ),
@@ -313,9 +324,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
             onPressed: () => Navigator.of(context).pop(false),
           ),
           TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: context.colors.error,
-            ),
+            style: TextButton.styleFrom(foregroundColor: context.colors.error),
             child: const Text('Delete'),
             onPressed: () => Navigator.of(context).pop(true),
           ),
@@ -330,8 +339,18 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   }
 
   static const _monthAbbr = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   @override
@@ -354,7 +373,9 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
             child: Text(
               'Save',
               style: TextStyle(
-                color: _canSave ? context.colors.primary : context.colors.outline,
+                color: _canSave
+                    ? context.colors.primary
+                    : context.colors.outline,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -378,12 +399,19 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                 label: 'Category',
                 onTap: _pickCategory,
                 child: _category == null
-                    ? Text('Select category',
-                        style: context.text.bodyMedium?.copyWith(color: context.colors.outline))
+                    ? Text(
+                        'Select category',
+                        style: context.text.bodyMedium?.copyWith(
+                          color: context.colors.outline,
+                        ),
+                      )
                     : Row(
                         children: [
-                          Icon(categoryIcon(_category!.icon),
-                              size: 16, color: context.colors.primary),
+                          Icon(
+                            categoryIcon(_category!.icon),
+                            size: 16,
+                            color: context.colors.primary,
+                          ),
                           const SizedBox(width: 8),
                           Text(_category!.name, style: context.text.bodyMedium),
                         ],
@@ -405,7 +433,9 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                 child: Text(
                   _isScanning ? 'Scanning…' : 'Scan receipt',
                   style: context.text.bodyMedium?.copyWith(
-                    color: _isScanning ? context.colors.onSurfaceVariant : context.colors.primary,
+                    color: _isScanning
+                        ? context.colors.onSurfaceVariant
+                        : context.colors.primary,
                   ),
                 ),
               ),
@@ -417,8 +447,9 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                   style: context.text.bodyMedium,
                   decoration: InputDecoration(
                     hintText: 'Optional note',
-                    hintStyle: context.text.bodyMedium
-                        ?.copyWith(color: context.colors.outline),
+                    hintStyle: context.text.bodyMedium?.copyWith(
+                      color: context.colors.outline,
+                    ),
                     border: InputBorder.none,
                     isDense: true,
                     contentPadding: EdgeInsets.zero,
@@ -488,8 +519,9 @@ class _AmountField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        type == TransactionType.income ? context.finance.income : context.colors.error;
+    final color = type == TransactionType.income
+        ? context.finance.income
+        : context.colors.error;
     return IntrinsicWidth(
       child: TextField(
         controller: controller,
@@ -499,10 +531,15 @@ class _AmountField extends StatelessWidget {
         decoration: InputDecoration(
           prefix: Padding(
             padding: const EdgeInsets.only(left: 4),
-            child: Text('\$', style: context.text.displaySmall?.copyWith(color: color)),
+            child: Text(
+              '\$',
+              style: context.text.displaySmall?.copyWith(color: color),
+            ),
           ),
           hintText: '0.00',
-          hintStyle: context.text.displaySmall?.copyWith(color: context.colors.outline),
+          hintStyle: context.text.displaySmall?.copyWith(
+            color: context.colors.outline,
+          ),
           border: InputBorder.none,
           isDense: true,
           contentPadding: EdgeInsets.zero,
@@ -531,17 +568,17 @@ class _FieldRow extends StatelessWidget {
           ),
           Expanded(child: child),
           if (onTap != null)
-            Icon(Icons.chevron_right_rounded,
-                size: 15, color: context.colors.outline),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 15,
+              color: context.colors.outline,
+            ),
         ],
       ),
     );
 
     if (onTap == null) return row;
 
-    return InkWell(
-      onTap: onTap,
-      child: row,
-    );
+    return InkWell(onTap: onTap, child: row);
   }
 }

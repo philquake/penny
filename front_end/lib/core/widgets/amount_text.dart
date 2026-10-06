@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/theme_x.dart';
 
 class AmountText extends StatelessWidget {
@@ -29,16 +30,13 @@ class AmountText extends StatelessWidget {
 
     return Text(
       display,
-      style: context.text.titleMedium?.copyWith(
+      style:
+          context.text.titleMedium?.copyWith(
             color: color,
             fontSize: size,
             fontWeight: weight,
           ) ??
-          TextStyle(
-            fontSize: size,
-            fontWeight: weight,
-            color: color,
-          ),
+          TextStyle(fontSize: size, fontWeight: weight, color: color),
     );
   }
 }

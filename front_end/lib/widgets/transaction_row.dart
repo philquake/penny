@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/category.dart';
 import '../models/transactions.dart';
 import '../models/transaction_type.dart';
@@ -6,8 +7,18 @@ import '../core/widgets/amount_text.dart';
 import '../core/theme/theme_x.dart';
 
 const _monthAbbr = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 /// Maps a Category's icon key (e.g. 'bag', 'car') to a Material glyph.
@@ -56,8 +67,9 @@ class TransactionRow extends StatelessWidget {
     // amount is always a positive Decimal-as-string from the backend;
     // sign for display comes from `type`, not the raw value.
     final magnitude = double.tryParse(transaction.amount) ?? 0;
-    final signedAmount =
-        transaction.type == TransactionType.expense ? -magnitude : magnitude;
+    final signedAmount = transaction.type == TransactionType.expense
+        ? -magnitude
+        : magnitude;
 
     final title = (transaction.description?.trim().isNotEmpty ?? false)
         ? transaction.description!
@@ -88,9 +100,15 @@ class TransactionRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: context.text.bodyMedium?.copyWith(fontSize: 14)),
+                  Text(
+                    title,
+                    style: context.text.bodyMedium?.copyWith(fontSize: 14),
+                  ),
                   const SizedBox(height: 2),
-                  Text('${category.name} · $dateLabel', style: context.text.bodySmall),
+                  Text(
+                    '${category.name} · $dateLabel',
+                    style: context.text.bodySmall,
+                  ),
                 ],
               ),
             ),

@@ -75,15 +75,15 @@ class FinanceColors extends ThemeExtension<FinanceColors> {
       income: Color.lerp(income, other.income, t) ?? income,
       incomeContainer:
           Color.lerp(incomeContainer, other.incomeContainer, t) ??
-              incomeContainer,
+          incomeContainer,
       expense: Color.lerp(expense, other.expense, t) ?? expense,
       expenseContainer:
           Color.lerp(expenseContainer, other.expenseContainer, t) ??
-              expenseContainer,
+          expenseContainer,
       warning: Color.lerp(warning, other.warning, t) ?? warning,
       warningContainer:
           Color.lerp(warningContainer, other.warningContainer, t) ??
-              warningContainer,
+          warningContainer,
       savings: Color.lerp(savings, other.savings, t) ?? savings,
       neutral: Color.lerp(neutral, other.neutral, t) ?? neutral,
     );

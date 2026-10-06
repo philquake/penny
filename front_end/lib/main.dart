@@ -31,7 +31,9 @@ class PennyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final preference = ref.watch(themeProvider); // name from your theme_provider.dart
+    final preference = ref.watch(
+      themeProvider,
+    ); // name from your theme_provider.dart
     return MaterialApp(
       title: 'Penny',
       debugShowCheckedModeBanner: false,
@@ -61,8 +63,9 @@ class _AppRoot extends ConsumerWidget {
       case SessionStatus.signedOut:
         return LoginScreen(
           initialError: session.error,
-          onSignIn: ({required email, required password}) =>
-              ref.read(sessionProvider.notifier).login(email: email, password: password),
+          onSignIn: ({required email, required password}) => ref
+              .read(sessionProvider.notifier)
+              .login(email: email, password: password),
         );
       case SessionStatus.signedIn:
         return const _AppShell();
@@ -85,9 +88,7 @@ class _AppShellState extends State<_AppShell> {
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      _HomeTab(
-        onViewBudgets: () => setState(() => _index = 1),
-      ),
+      _HomeTab(onViewBudgets: () => setState(() => _index = 1)),
       const _BudgetsTab(),
       const _ReportsTab(),
       const _SettingsTab(),
@@ -95,23 +96,28 @@ class _AppShellState extends State<_AppShell> {
 
     return Scaffold(
       backgroundColor: context.colors.surface,
-      body: IndexedStack(
-        index: _index,
-        children: tabs,
-      ),
+      body: IndexedStack(index: _index, children: tabs),
       bottomNavigationBar: NavigationBar(
         backgroundColor: context.colors.surface,
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
           NavigationDestination(
-              icon: Icon(Icons.home_rounded), label: 'Overview'),
+            icon: Icon(Icons.home_rounded),
+            label: 'Overview',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.bar_chart_rounded), label: 'Budgets'),
+            icon: Icon(Icons.bar_chart_rounded),
+            label: 'Budgets',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.pie_chart_rounded), label: 'Reports'),
+            icon: Icon(Icons.pie_chart_rounded),
+            label: 'Reports',
+          ),
           NavigationDestination(
-              icon: Icon(Icons.settings_rounded), label: 'Settings'),
+            icon: Icon(Icons.settings_rounded),
+            label: 'Settings',
+          ),
         ],
       ),
     );
@@ -137,7 +143,9 @@ Widget _asyncBody<T>(
           padding: const EdgeInsets.all(24),
           child: Text(
             'Couldn\'t load data.\n$error\n$stack',
-            style: context.text.bodyMedium?.copyWith(color: context.colors.error),
+            style: context.text.bodyMedium?.copyWith(
+              color: context.colors.error,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
@@ -159,7 +167,8 @@ Future<void> _openAddEditTransaction(
       builder: (context) => AddEditTransactionScreen(
         categories: categories,
         existing: existing,
-        onCreate: (data) => ref.read(transactionsProvider.notifier).create(data),
+        onCreate: (data) =>
+            ref.read(transactionsProvider.notifier).create(data),
         onUpdate: (id, data) =>
             ref.read(transactionsProvider.notifier).update(id, data),
         onDelete: existing == null
@@ -173,9 +182,7 @@ Future<void> _openAddEditTransaction(
 class _HomeTab extends ConsumerWidget {
   final VoidCallback onViewBudgets;
 
-  const _HomeTab({
-    required this.onViewBudgets,
-  });
+  const _HomeTab({required this.onViewBudgets});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -197,7 +204,8 @@ class _HomeTab extends ConsumerWidget {
             transactions: transactions,
             budgetEntries: budgetEntries,
             onAddTransaction: () => _openAddEditTransaction(context, ref),
-            onTransactionTap: (t) => _openAddEditTransaction(context, ref, existing: t),
+            onTransactionTap: (t) =>
+                _openAddEditTransaction(context, ref, existing: t),
             onViewBudgets: onViewBudgets,
           ),
         ),
@@ -214,18 +222,28 @@ class _BudgetsTab extends ConsumerWidget {
     final categoriesState = ref.watch(categoriesProvider);
     final budgetsState = ref.watch(budgetsProvider);
 
-    return _asyncBody(context, categoriesState, data: (categories) {
-      return _asyncBody(context, budgetsState, data: (entries) {
-        final expenseCategories =
-            categories.where((c) => c.type == TransactionType.expense).toList();
-        return BudgetsScreen(
-          entries: entries,
-          expenseCategories: expenseCategories,
-          onCreate: (data) => ref.read(budgetsProvider.notifier).create(data),
-          onDelete: (id) => ref.read(budgetsProvider.notifier).delete(id),
+    return _asyncBody(
+      context,
+      categoriesState,
+      data: (categories) {
+        return _asyncBody(
+          context,
+          budgetsState,
+          data: (entries) {
+            final expenseCategories = categories
+                .where((c) => c.type == TransactionType.expense)
+                .toList();
+            return BudgetsScreen(
+              entries: entries,
+              expenseCategories: expenseCategories,
+              onCreate: (data) =>
+                  ref.read(budgetsProvider.notifier).create(data),
+              onDelete: (id) => ref.read(budgetsProvider.notifier).delete(id),
+            );
+          },
         );
-      });
-    });
+      },
+    );
   }
 }
 
@@ -237,11 +255,22 @@ class _ReportsTab extends ConsumerWidget {
     final categoriesState = ref.watch(categoriesProvider);
     final transactionsState = ref.watch(transactionsProvider);
 
-    return _asyncBody(context, categoriesState, data: (categories) {
-      return _asyncBody(context, transactionsState, data: (transactions) {
-        return ReportsScreen(transactions: transactions, categories: categories);
-      });
-    });
+    return _asyncBody(
+      context,
+      categoriesState,
+      data: (categories) {
+        return _asyncBody(
+          context,
+          transactionsState,
+          data: (transactions) {
+            return ReportsScreen(
+              transactions: transactions,
+              categories: categories,
+            );
+          },
+        );
+      },
+    );
   }
 }
 
@@ -278,8 +307,10 @@ class _SettingsTab extends ConsumerWidget {
           MaterialPageRoute(
             builder: (context) => CategoriesScreen(
               categories: categories,
-              onCreate: (data) => ref.read(categoriesProvider.notifier).create(data),
-              onDelete: (id) => ref.read(categoriesProvider.notifier).delete(id),
+              onCreate: (data) =>
+                  ref.read(categoriesProvider.notifier).create(data),
+              onDelete: (id) =>
+                  ref.read(categoriesProvider.notifier).delete(id),
             ),
           ),
         );

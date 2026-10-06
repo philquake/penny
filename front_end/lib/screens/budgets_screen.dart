@@ -55,9 +55,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
             onPressed: () => Navigator.of(context).pop(false),
           ),
           TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: context.colors.error,
-            ),
+            style: TextButton.styleFrom(foregroundColor: context.colors.error),
             child: const Text('Delete'),
             onPressed: () => Navigator.of(context).pop(true),
           ),
@@ -287,7 +285,10 @@ class _BudgetCard extends StatelessWidget {
             children: [
               Text(
                 '\$${spent.toStringAsFixed(0)} of \$${limit.toStringAsFixed(0)}',
-                style: context.text.headlineMedium?.copyWith(fontSize: 13, color: context.colors.onSurface),
+                style: context.text.headlineMedium?.copyWith(
+                  fontSize: 13,
+                  color: context.colors.onSurface,
+                ),
               ),
               Text(
                 remaining >= 0
@@ -328,7 +329,9 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'No budgets yet',
-              style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+              style: context.text.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -449,8 +452,11 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
               ListTile(
                 title: Text(category.name, style: context.text.bodyMedium),
                 trailing: _category.id == category.id
-                    ? Icon(Icons.check_rounded,
-                        size: 16, color: context.colors.primary)
+                    ? Icon(
+                        Icons.check_rounded,
+                        size: 16,
+                        color: context.colors.primary,
+                      )
                     : null,
                 onTap: () => Navigator.of(context).pop(category),
               ),
@@ -596,8 +602,9 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                         color: context.colors.outline,
                       ),
                       prefixText: '\$ ',
-                      prefixStyle:
-                          context.text.headlineMedium?.copyWith(fontSize: 15),
+                      prefixStyle: context.text.headlineMedium?.copyWith(
+                        fontSize: 15,
+                      ),
                       border: InputBorder.none,
                       isDense: true,
                       contentPadding: EdgeInsets.zero,
@@ -674,7 +681,10 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                   _SheetFieldRow(
                     label: 'Monthly day',
                     onTap: _pickMonthlyDay,
-                    child: Text('Day ${_start.day}', style: context.text.bodyMedium),
+                    child: Text(
+                      'Day ${_start.day}',
+                      style: context.text.bodyMedium,
+                    ),
                   ),
                 ],
                 if (_period == BudgetPeriod.custom) ...[
@@ -697,7 +707,10 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Alert threshold', style: context.text.labelMedium),
+                          Text(
+                            'Alert threshold',
+                            style: context.text.labelMedium,
+                          ),
                           Text(
                             _threshold == 0 ? 'Off' : '${_threshold.round()}%',
                             style: context.text.headlineMedium?.copyWith(
@@ -713,7 +726,8 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                         max: 100,
                         divisions: 20,
                         activeColor: context.colors.primary,
-                        onChanged: (value) => setState(() => _threshold = value),
+                        onChanged: (value) =>
+                            setState(() => _threshold = value),
                       ),
                     ],
                   ),
@@ -729,10 +743,7 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
   Widget _segmentLabel(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Text(
-        text,
-        style: context.text.bodyMedium?.copyWith(fontSize: 12),
-      ),
+      child: Text(text, style: context.text.bodyMedium?.copyWith(fontSize: 12)),
     );
   }
 }
@@ -750,7 +761,10 @@ class _SheetFieldRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         children: [
-          SizedBox(width: 100, child: Text(label, style: context.text.labelMedium)),
+          SizedBox(
+            width: 100,
+            child: Text(label, style: context.text.labelMedium),
+          ),
           Expanded(child: child),
           if (onTap != null)
             Icon(
@@ -762,9 +776,6 @@ class _SheetFieldRow extends StatelessWidget {
       ),
     );
     if (onTap == null) return row;
-    return InkWell(
-      onTap: onTap,
-      child: row,
-    );
+    return InkWell(onTap: onTap, child: row);
   }
 }

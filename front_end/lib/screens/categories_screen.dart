@@ -44,7 +44,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   String _errorMessage(Object error) {
     if (error is DioException) {
       final data = error.response?.data;
-      if (data is Map && data['detail'] is String) return data['detail'] as String;
+      if (data is Map && data['detail'] is String)
+        return data['detail'] as String;
     }
     return 'Something went wrong. Please try again.';
   }
@@ -116,9 +117,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             onPressed: () => Navigator.of(context).pop(false),
           ),
           TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: context.colors.error,
-            ),
+            style: TextButton.styleFrom(foregroundColor: context.colors.error),
             child: const Text('Delete'),
             onPressed: () => Navigator.of(context).pop(true),
           ),
@@ -161,17 +160,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     if (created != null) {
       // Optimistic local id — the real id comes back from POST /categories;
       // caller should reconcile this with the server response.
-      final tempId = (_categories.map((c) => c.id).fold<int>(0, (a, b) => a > b ? a : b)) + 1;
+      final tempId =
+          (_categories.map((c) => c.id).fold<int>(0, (a, b) => a > b ? a : b)) +
+          1;
       setState(() {
-        _categories.add(Category(
-          id: tempId,
-          userId: 1,
-          name: created.name,
-          type: created.type,
-          icon: created.icon,
-          isDefault: false,
-          color: created.color,
-        ));
+        _categories.add(
+          Category(
+            id: tempId,
+            userId: 1,
+            name: created.name,
+            type: created.type,
+            icon: created.icon,
+            isDefault: false,
+            color: created.color,
+          ),
+        );
       });
       widget.onCreate(created);
     }
@@ -293,8 +296,7 @@ class _CategoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        categoryColor(category.id, hex: category.color);
+    final color = categoryColor(category.id, hex: category.color);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -315,7 +317,10 @@ class _CategoryRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(category.name, style: context.text.bodyMedium?.copyWith(fontSize: 14)),
+            child: Text(
+              category.name,
+              style: context.text.bodyMedium?.copyWith(fontSize: 14),
+            ),
           ),
           if (category.isDefault)
             Text('Default', style: context.text.bodySmall)
@@ -324,8 +329,11 @@ class _CategoryRow extends StatelessWidget {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               onPressed: onDelete,
-              icon: Icon(Icons.remove_circle_outline_rounded,
-                  size: 20, color: context.colors.error),
+              icon: Icon(
+                Icons.remove_circle_outline_rounded,
+                size: 20,
+                color: context.colors.error,
+              ),
             ),
         ],
       ),
@@ -347,7 +355,13 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
   String _icon = 'bag';
   String? _color;
 
-  static const _iconChoices = ['bag', 'house', 'car', 'repeat', 'arrow_down_left'];
+  static const _iconChoices = [
+    'bag',
+    'house',
+    'car',
+    'repeat',
+    'arrow_down_left',
+  ];
 
   @override
   void dispose() {
@@ -359,12 +373,14 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
 
   void _handleSave() {
     if (!_canSave) return;
-    Navigator.of(context).pop(CategoryCreate(
-      name: _nameController.text.trim(),
-      type: _type,
-      icon: _icon,
-      color: _color,
-    ));
+    Navigator.of(context).pop(
+      CategoryCreate(
+        name: _nameController.text.trim(),
+        type: _type,
+        icon: _icon,
+        color: _color,
+      ),
+    );
   }
 
   @override
@@ -393,13 +409,18 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
                       onPressed: () => Navigator.of(context).pop(),
                       child: const Text('Cancel'),
                     ),
-                    Text('New Category', style: context.text.titleLarge?.copyWith(fontSize: 16)),
+                    Text(
+                      'New Category',
+                      style: context.text.titleLarge?.copyWith(fontSize: 16),
+                    ),
                     TextButton(
                       onPressed: _canSave ? _handleSave : null,
                       child: Text(
                         'Add',
                         style: TextStyle(
-                          color: _canSave ? context.colors.primary : context.colors.outline,
+                          color: _canSave
+                              ? context.colors.primary
+                              : context.colors.outline,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -415,14 +436,20 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
                   style: context.text.bodyMedium,
                   decoration: InputDecoration(
                     hintText: 'e.g. Pet Care',
-                    hintStyle: context.text.bodyMedium?.copyWith(color: context.colors.outline),
+                    hintStyle: context.text.bodyMedium?.copyWith(
+                      color: context.colors.outline,
+                    ),
                     filled: true,
                     fillColor: context.colors.surfaceContainerLowest,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: context.colors.outlineVariant),
+                      borderSide: BorderSide(
+                        color: context.colors.outlineVariant,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -478,8 +505,11 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
                             ),
                           ),
                           alignment: Alignment.center,
-                          child: Icon(categoryIcon(key),
-                              size: 18, color: context.colors.primary),
+                          child: Icon(
+                            categoryIcon(key),
+                            size: 18,
+                            color: context.colors.primary,
+                          ),
                         ),
                       ),
                   ],
@@ -502,12 +532,7 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
   Widget _segmentLabel(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(
-        text,
-        style: context.text.bodyMedium?.copyWith(
-          fontSize: 14,
-        ),
-      ),
+      child: Text(text, style: context.text.bodyMedium?.copyWith(fontSize: 14)),
     );
   }
 }

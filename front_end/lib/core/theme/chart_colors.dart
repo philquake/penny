@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 
 /// Preset swatches for the category color picker, also the fallback palette.
 const categorySwatches = <String>[
-  '#2E9E7A', 
+  '#2E9E7A',
   '#7A6A9C',
   '#B99A3E',
   '#4A7A8C',
   '#D98A2B',
   '#8C6F52',
-  '#5267A9', 
+  '#5267A9',
   '#4D9078',
   '#D9827B',
   '#356B7A',

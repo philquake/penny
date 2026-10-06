@@ -20,7 +20,10 @@ class CategoryBreakdownChart extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 24),
         child: Center(
-          child: Text('No expenses in this period', style: context.text.bodySmall),
+          child: Text(
+            'No expenses in this period',
+            style: context.text.bodySmall,
+          ),
         ),
       );
     }
@@ -86,7 +89,10 @@ class _LegendItem extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        Text('$label ${(percent * 100).round()}%', style: context.text.bodySmall),
+        Text(
+          '$label ${(percent * 100).round()}%',
+          style: context.text.bodySmall,
+        ),
       ],
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/category.dart';
 import '../models/transaction_type.dart';
 import '../models/transactions.dart';
@@ -53,7 +54,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         _FlowFilter.expenses => t.type == TransactionType.expense,
       };
       final category = _categoryFor(t.categoryId);
-      final matchesQuery = query.isEmpty ||
+      final matchesQuery =
+          query.isEmpty ||
           (t.description?.toLowerCase().contains(query) ?? false) ||
           (category?.name.toLowerCase().contains(query) ?? false);
       return matchesFlow && matchesQuery;
@@ -77,8 +79,18 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       return 'Earlier this month';
     }
     const monthNames = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${monthNames[date.month - 1]} ${date.year}';
   }
@@ -106,8 +118,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     controller: _searchController,
                     hintText: 'Search description or category',
                     textStyle: WidgetStatePropertyAll(context.text.bodyMedium),
-                    backgroundColor:
-                        WidgetStatePropertyAll(context.colors.surfaceContainerLowest),
+                    backgroundColor: WidgetStatePropertyAll(
+                      context.colors.surfaceContainerLowest,
+                    ),
                     elevation: const WidgetStatePropertyAll(0),
                     leading: const Icon(Icons.search_rounded),
                     onChanged: (_) => setState(() {}),
@@ -162,20 +175,28 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         decoration: BoxDecoration(
                           color: context.colors.surfaceContainerLowest,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: context.colors.outlineVariant),
+                          border: Border.all(
+                            color: context.colors.outlineVariant,
+                          ),
                         ),
                         child: Column(
                           children: [
                             for (int i = 0; i < entry.value.length; i++) ...[
-                              Builder(builder: (context) {
-                                final category = _categoryFor(entry.value[i].categoryId);
-                                if (category == null) return const SizedBox.shrink();
-                                return TransactionRow(
-                                  transaction: entry.value[i],
-                                  category: category,
-                                  onTap: () => widget.onTransactionTap(entry.value[i]),
-                                );
-                              }),
+                              Builder(
+                                builder: (context) {
+                                  final category = _categoryFor(
+                                    entry.value[i].categoryId,
+                                  );
+                                  if (category == null)
+                                    return const SizedBox.shrink();
+                                  return TransactionRow(
+                                    transaction: entry.value[i],
+                                    category: category,
+                                    onTap: () =>
+                                        widget.onTransactionTap(entry.value[i]),
+                                  );
+                                },
+                              ),
                               if (i != entry.value.length - 1)
                                 const Divider(height: 1, indent: 56),
                             ],
@@ -195,12 +216,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   Widget _segmentLabel(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Text(
-        text,
-        style: context.text.bodyMedium?.copyWith(
-          fontSize: 13,
-        ),
-      ),
+      child: Text(text, style: context.text.bodyMedium?.copyWith(fontSize: 13)),
     );
   }
 }
@@ -217,12 +233,17 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.search_off_rounded,
-                size: 32, color: context.colors.outline),
+            Icon(
+              Icons.search_off_rounded,
+              size: 32,
+              color: context.colors.outline,
+            ),
             const SizedBox(height: 12),
             Text(
               hasQuery ? 'No matching transactions' : 'No transactions yet',
-              style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+              style: context.text.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),

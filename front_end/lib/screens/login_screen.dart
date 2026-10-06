@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../core/theme/theme_x.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/theme/theme_x.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Login screen for Penny.
 ///
@@ -14,7 +15,8 @@ class LoginScreen extends StatefulWidget {
   final Future<String?> Function({
     required String email,
     required String password,
-  }) onSignIn;
+  })
+  onSignIn;
 
   final String? initialError;
 
@@ -34,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isSubmitting = false;
   String? _errorText;
-  
+
   @override
   void initState() {
     super.initState();
@@ -85,7 +87,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       body: SafeArea(
         child: GestureDetector(
@@ -234,8 +235,6 @@ class _Wordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-
     return Column(
       children: [
         Container(
@@ -288,8 +287,6 @@ class _LedgerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-
     OutlineInputBorder border(Color color, [double width = 1]) =>
         OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -301,7 +298,9 @@ class _LedgerField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: context.text.labelMedium?.copyWith(color: context.colors.onSurfaceVariant),
+          style: context.text.labelMedium?.copyWith(
+            color: context.colors.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 6),
         TextField(
@@ -313,12 +312,16 @@ class _LedgerField extends StatelessWidget {
           style: context.text.bodyMedium,
           decoration: InputDecoration(
             hintText: placeholder,
-            hintStyle: context.text.bodyMedium?.copyWith(color: context.colors.outline),
+            hintStyle: context.text.bodyMedium?.copyWith(
+              color: context.colors.outline,
+            ),
             suffixIcon: suffix,
             filled: true,
             fillColor: context.colors.surface,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
             enabledBorder: border(context.colors.outlineVariant),
             focusedBorder: border(context.colors.primary, 1.5),
             border: border(context.colors.outlineVariant),
@@ -335,13 +338,14 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: context.finance.expense.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: context.finance.expense.withValues(alpha: 0.25)),
+        border: Border.all(
+          color: context.finance.expense.withValues(alpha: 0.25),
+        ),
       ),
       child: Row(
         children: [

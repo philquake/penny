@@ -73,8 +73,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _notificationsLoading = true);
 
     try {
-      final allowed =
-          await BudgetNotificationService.instance.setEnabled(enabled);
+      final allowed = await BudgetNotificationService.instance.setEnabled(
+        enabled,
+      );
       if (!mounted) return;
 
       setState(() {
@@ -108,7 +109,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       setState(() => _notificationsLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not update notification settings.')),
+        const SnackBar(
+          content: Text('Could not update notification settings.'),
+        ),
       );
     }
   }
@@ -128,9 +131,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            style: TextButton.styleFrom(
-              foregroundColor: context.colors.error,
-            ),
+            style: TextButton.styleFrom(foregroundColor: context.colors.error),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Sign Out'),
           ),
@@ -216,8 +217,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     rows: [
                       _SettingsRow(
                         label: 'Budget notifications',
-                        subtitle:
-                            'Notify when a budget threshold is reached',
+                        subtitle: 'Notify when a budget threshold is reached',
                         icon: Icons.notifications_active_rounded,
                         trailing: _notificationsLoading
                             ? SizedBox(
@@ -305,8 +305,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     width: double.infinity,
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor:
-                            context.colors.errorContainer.withValues(alpha: 0.3),
+                        backgroundColor: context.colors.errorContainer
+                            .withValues(alpha: 0.3),
                         foregroundColor: context.colors.error,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -488,9 +488,7 @@ class _SettingsRow extends StatelessWidget {
             child: Icon(
               icon,
               size: 17,
-              color: enabled
-                  ? context.colors.primary
-                  : context.colors.outline,
+              color: enabled ? context.colors.primary : context.colors.outline,
             ),
           ),
           const SizedBox(width: 12),

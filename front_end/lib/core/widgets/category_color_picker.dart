@@ -6,7 +6,11 @@ import '../theme/theme_x.dart';
 class CategoryColorPicker extends StatelessWidget {
   final String? selectedHex;
   final ValueChanged<String> onChanged;
-  const CategoryColorPicker({super.key, required this.selectedHex, required this.onChanged});
+  const CategoryColorPicker({
+    super.key,
+    required this.selectedHex,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +46,10 @@ class CategoryColorPicker extends StatelessWidget {
 }
 
 /// Bottom sheet for recoloring an existing category. Returns the chosen hex.
-Future<String?> showCategoryColorSheet(BuildContext context, {String? current}) {
+Future<String?> showCategoryColorSheet(
+  BuildContext context, {
+  String? current,
+}) {
   return showModalBottomSheet<String>(
     context: context,
     showDragHandle: true,

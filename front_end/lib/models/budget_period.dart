@@ -1,9 +1,4 @@
-enum BudgetPeriod {
-  weekly,
-  monthly,
-  yearly,
-  custom,
-}
+enum BudgetPeriod { weekly, monthly, yearly, custom }
 
 extension BudgetPeriodExtension on BudgetPeriod {
   String get value {
@@ -30,10 +25,7 @@ extension BudgetPeriodExtension on BudgetPeriod {
       case 'custom':
         return BudgetPeriod.custom;
       default:
-        throw ArgumentError(
-          'Unknown budget period: $value',
-        );
+        throw ArgumentError('Unknown budget period: $value');
     }
   }
 }
-

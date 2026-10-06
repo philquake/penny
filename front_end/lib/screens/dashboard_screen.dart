@@ -91,12 +91,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _segmentLabel(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Text(
-        text,
-        style: context.text.bodyMedium?.copyWith(
-          fontSize: 13,
-        ),
-      ),
+      child: Text(text, style: context.text.bodyMedium?.copyWith(fontSize: 13)),
     );
   }
 
@@ -168,7 +163,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             decoration: BoxDecoration(
                               color: context.colors.surfaceContainerLowest,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: context.colors.outlineVariant),
+                              border: Border.all(
+                                color: context.colors.outlineVariant,
+                              ),
                             ),
                             child: Row(
                               children: [
@@ -181,7 +178,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 Expanded(
                                   child: Text(
                                     'No budgets set yet',
-                                    style: context.text.bodyMedium?.copyWith(fontSize: 14),
+                                    style: context.text.bodyMedium?.copyWith(
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
                                 TextButton(
@@ -190,7 +189,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       horizontal: 8,
                                     ),
                                     minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                   ),
                                   onPressed: widget.onViewBudgets,
                                   child: Text(
@@ -218,7 +218,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           actionLabel: 'View all',
                           onAction: () {
                             widget.onViewTransactions?.call();
-                            setState(() => _selectedView = _DashboardView.expenses);
+                            setState(
+                              () => _selectedView = _DashboardView.expenses,
+                            );
                           },
                         ),
                         const SizedBox(height: 4),
@@ -237,7 +239,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             decoration: BoxDecoration(
                               color: context.colors.surfaceContainerLowest,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: context.colors.outlineVariant),
+                              border: Border.all(
+                                color: context.colors.outlineVariant,
+                              ),
                             ),
                             child: Column(
                               children: [
@@ -254,8 +258,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         transaction: recent[i],
                                         category: category,
                                         onTap: widget.onTransactionTap == null
-                                        ? null
-                                        : () => widget.onTransactionTap!(recent[i]),
+                                            ? null
+                                            : () => widget.onTransactionTap!(
+                                                recent[i],
+                                              ),
                                       );
                                     },
                                   ),
@@ -266,7 +272,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ),
                         const SizedBox(height: 32),
-                        _DailySpendingCalendar(transactions: widget.transactions),
+                        _DailySpendingCalendar(
+                          transactions: widget.transactions,
+                        ),
                       ],
                     ),
                   ),
@@ -293,10 +301,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               elevation: 0,
               shape: const CircleBorder(),
               onPressed: widget.onAddTransaction,
-              child: const Icon(
-                Icons.add_rounded,
-                size: 28,
-              ),
+              child: const Icon(Icons.add_rounded, size: 28),
             ),
           ),
         ],
@@ -344,7 +349,8 @@ class _ExpensesListState extends State<_ExpensesList> {
         _FlowFilter.expenses => t.type == TransactionType.expense,
       };
       final category = _categoryFor(t.categoryId);
-      final matchesQuery = query.isEmpty ||
+      final matchesQuery =
+          query.isEmpty ||
           (t.description?.toLowerCase().contains(query) ?? false) ||
           (category?.name.toLowerCase().contains(query) ?? false);
       return matchesFlow && matchesQuery;
@@ -352,9 +358,9 @@ class _ExpensesListState extends State<_ExpensesList> {
   }
 
   Widget _label(BuildContext context, String text) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Text(text, style: context.text.bodyMedium?.copyWith(fontSize: 13)),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Text(text, style: context.text.bodyMedium?.copyWith(fontSize: 13)),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -366,8 +372,9 @@ class _ExpensesListState extends State<_ExpensesList> {
           controller: _searchController,
           hintText: 'Search description or category',
           textStyle: WidgetStatePropertyAll(context.text.bodyMedium),
-          backgroundColor:
-              WidgetStatePropertyAll(context.colors.surfaceContainerLowest),
+          backgroundColor: WidgetStatePropertyAll(
+            context.colors.surfaceContainerLowest,
+          ),
           elevation: const WidgetStatePropertyAll(0),
           leading: const Icon(Icons.search_rounded),
           onChanged: (_) => setState(() {}),
@@ -419,17 +426,19 @@ class _ExpensesListState extends State<_ExpensesList> {
             child: Column(
               children: [
                 for (int i = 0; i < rows.length; i++) ...[
-                  Builder(builder: (context) {
-                    final category = _categoryFor(rows[i].categoryId);
-                    if (category == null) return const SizedBox.shrink();
-                    return TransactionRow(
-                    transaction: rows[i],
-                    category: category,
-                    onTap: widget.onTransactionTap == null
-                        ? null
-                        : () => widget.onTransactionTap!(rows[i]),
-                  );
-                  }),
+                  Builder(
+                    builder: (context) {
+                      final category = _categoryFor(rows[i].categoryId);
+                      if (category == null) return const SizedBox.shrink();
+                      return TransactionRow(
+                        transaction: rows[i],
+                        category: category,
+                        onTap: widget.onTransactionTap == null
+                            ? null
+                            : () => widget.onTransactionTap!(rows[i]),
+                      );
+                    },
+                  ),
                   if (i != rows.length - 1)
                     const Divider(height: 1, indent: 56),
                 ],
@@ -550,9 +559,7 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
             Expanded(
               child: Text(
                 'Daily spending',
-                style: context.text.titleLarge?.copyWith(
-                  fontSize: 17,
-                ),
+                style: context.text.titleLarge?.copyWith(fontSize: 17),
               ),
             ),
             IconButton(
@@ -595,9 +602,7 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
                 child: Center(
                   child: Text(
                     weekday,
-                    style: context.text.bodySmall?.copyWith(
-                      fontSize: 10,
-                    ),
+                    style: context.text.bodySmall?.copyWith(fontSize: 10),
                   ),
                 ),
               ),
@@ -689,10 +694,7 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
                 style: context.text.bodySmall,
               ),
             ),
-            AmountText(
-              _selectedTotal.toStringAsFixed(2),
-              colorBySign: false,
-            ),
+            AmountText(_selectedTotal.toStringAsFixed(2), colorBySign: false),
           ],
         ),
       ],
@@ -736,7 +738,11 @@ class _BalanceBlock extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Container(width: 1, height: 34, color: context.colors.outlineVariant),
+            Container(
+              width: 1,
+              height: 34,
+              color: context.colors.outlineVariant,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: _FlowStat(
@@ -854,7 +860,9 @@ class _BudgetRow extends StatelessWidget {
               style: context.text.displaySmall?.copyWith(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: isOver ? context.colors.error : context.colors.onSurfaceVariant,
+                color: isOver
+                    ? context.colors.error
+                    : context.colors.onSurfaceVariant,
               ),
             ),
           ],

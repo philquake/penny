@@ -6,10 +6,10 @@ enum ThemePreference { system, light, dark }
 
 extension ThemePreferenceX on ThemePreference {
   ThemeMode get mode => switch (this) {
-        ThemePreference.system => ThemeMode.system,
-        ThemePreference.light => ThemeMode.light,
-        ThemePreference.dark => ThemeMode.dark,
-      };
+    ThemePreference.system => ThemeMode.system,
+    ThemePreference.light => ThemeMode.light,
+    ThemePreference.dark => ThemeMode.dark,
+  };
 }
 
 class ThemeController extends StateNotifier<ThemePreference> {
@@ -43,8 +43,8 @@ class ThemeController extends StateNotifier<ThemePreference> {
 
 final themeControllerProvider =
     StateNotifierProvider<ThemeController, ThemePreference>(
-  (ref) => ThemeController(const FlutterSecureStorage()),
-);
+      (ref) => ThemeController(const FlutterSecureStorage()),
+    );
 
 final themeProvider = Provider<ThemePreference>((ref) {
   return ref.watch(themeControllerProvider);

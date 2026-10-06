@@ -71,17 +71,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
     for (final t in _inRange.where((t) => t.type == TransactionType.expense)) {
       totals[t.categoryId] = (totals[t.categoryId] ?? 0) + _amount(t);
     }
-    final items = totals.entries
-        .map(
-          (e) => CategoryBreakdownItem(
-            categoryId: e.key,
-            categoryName: _categoryFor(e.key)?.name ?? 'Uncategorized',
-            total: e.value,
-            colorHex: _categoryFor(e.key)?.color,
-          ),
-        )
-        .toList()
-      ..sort((a, b) => b.total.compareTo(a.total));
+    final items =
+        totals.entries
+            .map(
+              (e) => CategoryBreakdownItem(
+                categoryId: e.key,
+                categoryName: _categoryFor(e.key)?.name ?? 'Uncategorized',
+                total: e.value,
+                colorHex: _categoryFor(e.key)?.color,
+              ),
+            )
+            .toList()
+          ..sort((a, b) => b.total.compareTo(a.total));
     return items;
   }
 
@@ -94,9 +95,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     return months.map((monthStart) {
       final monthEnd = DateTime(monthStart.year, monthStart.month + 1, 1);
-      final inMonth = widget.transactions.where((t) =>
-          !t.transactionDate.isBefore(monthStart) &&
-          t.transactionDate.isBefore(monthEnd));
+      final inMonth = widget.transactions.where(
+        (t) =>
+            !t.transactionDate.isBefore(monthStart) &&
+            t.transactionDate.isBefore(monthEnd),
+      );
 
       final income = inMonth
           .where((t) => t.type == TransactionType.income)
@@ -175,10 +178,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ],
                   ),
                   const SizedBox(height: 32),
-                  Text(
-                    'Spending by category',
-                    style: context.text.titleMedium,
-                  ),
+                  Text('Spending by category', style: context.text.titleMedium),
                   const SizedBox(height: 16),
                   CategoryBreakdownChart(items: breakdown),
                   if (breakdown.isNotEmpty) ...[
@@ -198,7 +198,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               percent: _totalExpenses > 0
                                   ? breakdown[i].total / _totalExpenses
                                   : 0,
-                              color: categoryColor(breakdown[i].categoryId, hex: breakdown[i].colorHex),
+                              color: categoryColor(
+                                breakdown[i].categoryId,
+                                hex: breakdown[i].colorHex,
+                              ),
                             ),
                             if (i != breakdown.length - 1)
                               Divider(
@@ -212,10 +215,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ),
                   ],
                   const SizedBox(height: 32),
-                  Text(
-                    'Income vs. expenses',
-                    style: context.text.titleMedium,
-                  ),
+                  Text('Income vs. expenses', style: context.text.titleMedium),
                   const SizedBox(height: 4),
                   Text(
                     'Last 6 months',
@@ -316,9 +316,7 @@ class _CategoryBreakdownRow extends StatelessWidget {
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(name, style: context.text.bodyMedium),
-          ),
+          Expanded(child: Text(name, style: context.text.bodyMedium)),
           Text(
             '${(percent * 100).round()}%',
             style: context.text.bodySmall?.copyWith(
@@ -326,11 +324,7 @@ class _CategoryBreakdownRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          AmountText(
-            amount.toStringAsFixed(2),
-            size: 13,
-            colorBySign: false,
-          ),
+          AmountText(amount.toStringAsFixed(2), size: 13, colorBySign: false),
         ],
       ),
     );
@@ -342,8 +336,18 @@ class _MonthlyTrendChart extends StatelessWidget {
   const _MonthlyTrendChart({required this.months});
 
   static const _monthAbbr = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   @override
@@ -364,9 +368,15 @@ class _MonthlyTrendChart extends StatelessWidget {
         gridData: const FlGridData(show: false),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,

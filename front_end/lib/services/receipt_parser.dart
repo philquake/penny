@@ -1,9 +1,5 @@
 class ReceiptScanResult {
-  const ReceiptScanResult({
-    this.merchant,
-    this.amount,
-    this.date,
-  });
+  const ReceiptScanResult({this.merchant, this.amount, this.date});
 
   final String? merchant;
   final String? amount;
@@ -23,11 +19,7 @@ class ReceiptTextParser {
     final amount = _amountFrom(lines);
     final date = _dateFrom(lines);
 
-    return ReceiptScanResult(
-      merchant: merchant,
-      amount: amount,
-      date: date,
-    );
+    return ReceiptScanResult(merchant: merchant, amount: amount, date: date);
   }
 
   static String? _merchantFrom(List<String> lines) {
@@ -113,13 +105,11 @@ class ReceiptTextParser {
         }
 
         final yearPart = int.parse(third);
-        final year = yearPart < 100 ? (yearPart >= 50 ? 1900 + yearPart : 2000 + yearPart) : yearPart;
+        final year = yearPart < 100
+            ? (yearPart >= 50 ? 1900 + yearPart : 2000 + yearPart)
+            : yearPart;
 
-        return DateTime(
-          year,
-          int.parse(first),
-          int.parse(second),
-        );
+        return DateTime(year, int.parse(first), int.parse(second));
       }
     }
 
@@ -127,9 +117,8 @@ class ReceiptTextParser {
   }
 
   static String? _extractMoney(String line) {
-    final match = RegExp(
-      r'\$?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})|\d+\.\d{1,2}',
-    ).firstMatch(line);
+    final match = RegExp(r'\$?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})|\d+\.\d{1,2}')
+        .firstMatch(line);
 
     if (match == null) return null;
     return match.group(0);
@@ -143,7 +132,8 @@ class ReceiptTextParser {
   }
 
   static bool _looksLikeMoney(String text) {
-    return RegExp(r'\$?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})|\d+\.\d{1,2}').hasMatch(text);
+    return RegExp(r'\$?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})|\d+\.\d{1,2}')
+        .hasMatch(text);
   }
 
   static bool _looksLikeDate(String text) {

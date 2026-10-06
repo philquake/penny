@@ -40,20 +40,21 @@ class BudgetNotificationService {
     }
 
     bool? granted;
-    final android = _plugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
     if (android != null) {
       granted = await android.requestNotificationsPermission();
     }
 
-    final ios = _plugin.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
+    final ios = _plugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
     if (ios != null) {
-      granted = await ios.requestPermissions(
-            alert: true,
-            badge: true,
-            sound: true,
-          ) ??
+      granted =
+          await ios.requestPermissions(alert: true, badge: true, sound: true) ??
           false;
     }
 
@@ -75,7 +76,8 @@ class BudgetNotificationService {
         return;
       }
 
-      if (!(preferences.getBool(_enabledKey) ?? false) || sentIds.contains(key)) {
+      if (!(preferences.getBool(_enabledKey) ?? false) ||
+          sentIds.contains(key)) {
         return;
       }
 
