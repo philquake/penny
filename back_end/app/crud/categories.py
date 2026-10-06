@@ -1,8 +1,3 @@
-from sqlalchemy import or_, select
-from sqlalchemy.orm import Session
-
-from app.models.categories import Category
-from app.models.transactions import TransactionType
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 

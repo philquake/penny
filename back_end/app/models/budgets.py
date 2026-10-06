@@ -4,10 +4,12 @@ from enum import Enum
 
 from sqlalchemy import (
     Date,
-    Enum as SQLEnum,
     ForeignKey,
     Integer,
     Numeric,
+)
+from sqlalchemy import (
+    Enum as SQLEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 

@@ -1,4 +1,4 @@
-from app.crud.users import get_user_by_email, create_user
+from app.crud.users import create_user, get_user_by_email
 from app.models.users import User
 
 

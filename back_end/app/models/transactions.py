@@ -5,11 +5,13 @@ from enum import Enum
 from sqlalchemy import (
     Date,
     DateTime,
-    Enum as SQLEnum,
     ForeignKey,
     Index,
     Numeric,
     Text,
+)
+from sqlalchemy import (
+    Enum as SQLEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 

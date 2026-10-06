@@ -2,8 +2,8 @@ from datetime import date
 from decimal import Decimal
 
 from app.crud.categories import create_category
+from app.crud.reports import get_by_category, get_summary, get_trend
 from app.crud.transactions import create_transaction
-from app.crud.reports import get_summary, get_by_category, get_trend
 from app.models.transactions import TransactionType
 
 

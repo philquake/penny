@@ -1,15 +1,17 @@
-from sqlalchemy import select
-
 from sqlalchemy import (
     Boolean,
-    Enum as SQLEnum,
     ForeignKey,
     String,
+    select,
+)
+from sqlalchemy import (
+    Enum as SQLEnum,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.database import Base
 from app.models.transactions import TransactionType
+
 
 class Category(Base):
     __tablename__ = "categories"

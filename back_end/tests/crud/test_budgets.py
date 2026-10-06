@@ -9,8 +9,9 @@ from app.crud.budgets import (
 )
 from app.crud.categories import create_category
 from app.crud.transactions import create_transaction
-from app.models.transactions import TransactionType
 from app.models.budgets import BudgetPeriod
+from app.models.transactions import TransactionType
+
 
 def test_create_budget(db):
     category = create_category(

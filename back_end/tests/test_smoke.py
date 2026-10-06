@@ -1,13 +1,14 @@
+from decimal import Decimal
 from pathlib import Path
+
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from fastapi.testclient import TestClient
-from decimal import Decimal
 
-from app.main import app
-from app.db.database import Base, get_db
 from app.crud.categories import seed_default_categories
 from app.db import database
+from app.db.database import Base, get_db
+from app.main import app
 
 TEST_DB = Path(__file__).parent / "test_smoke.db"
 if TEST_DB.exists():
@@ -24,7 +25,10 @@ TestSessionLocal = sessionmaker(bind=test_engine, autocommit=False, autoflush=Fa
 database.engine = test_engine
 database.SessionLocal = TestSessionLocal
 
-from app.main import app  # import app AFTER the patch if lifespan reads database.* at call time — but since it's call-time now, import order doesn't matter as much
+from app.main import (
+    app,  # import app AFTER the patch if lifespan reads database.* at call time — but since it's call-time now, import order doesn't matter as much
+)
+
 
 def override_get_db():
     db = TestSessionLocal()

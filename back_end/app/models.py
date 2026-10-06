@@ -6,7 +6,6 @@ from sqlalchemy import (
     Boolean,
     Date,
     DateTime,
-    Enum as SQLEnum,
     ForeignKey,
     Index,
     Integer,
@@ -14,9 +13,13 @@ from sqlalchemy import (
     String,
     Text,
 )
+from sqlalchemy import (
+    Enum as SQLEnum,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.database import Base
+
 
 class TransactionType(str, Enum):
     INCOME = "income"

@@ -10,6 +10,7 @@ from app.crud.transactions import (
 )
 from app.models.transactions import TransactionType
 
+
 def test_create_transaction(db):
     category = create_category(
         db,

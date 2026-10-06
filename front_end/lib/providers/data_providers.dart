@@ -58,13 +58,19 @@ final categoriesProvider =
 /// Transactions: same refresh-on-mutation pattern as categories.
 class TransactionsController extends StateNotifier<AsyncValue<List<Transaction>>> {
   final TransactionsRepository _repo;
-  TransactionsController(this._repo) : super(const AsyncValue.loading()) {
+  final Ref _ref;
+  TransactionsController(this._repo, this._ref) : super(const AsyncValue.loading()) {
     refresh();
   }
 
   Future<void> refresh() async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() => _repo.list());
+  }
+
+  Future<void> _afterMutation() async {
+    await refresh();
+    await _ref.read(budgetsProvider.notifier).refresh(silent: true);
   }
 
   Future<void> create(TransactionCreate data) async {
@@ -74,7 +80,7 @@ class TransactionsController extends StateNotifier<AsyncValue<List<Transaction>>
 
   Future<void> update(int id, TransactionUpdate data) async {
     await _repo.update(id, data);
-    await refresh();
+    await _afterMutation();
   }
 
   Future<void> delete(int id) async {
@@ -82,12 +88,13 @@ class TransactionsController extends StateNotifier<AsyncValue<List<Transaction>>
     state = state.whenData(
       (list) => list.where((t) => t.id != id).toList(),
     );
+    await _ref.read(budgetsProvider.notifier).refresh(silent: true);
   }
 }
 
 final transactionsProvider =
     StateNotifierProvider<TransactionsController, AsyncValue<List<Transaction>>>(
-  (ref) => TransactionsController(ref.watch(transactionsRepositoryProvider)),
+  (ref) => TransactionsController(ref.watch(transactionsRepositoryProvider), ref),
 );
 
 /// Budgets: fetches the list, then fetches each budget's status
@@ -102,13 +109,14 @@ class BudgetsController extends StateNotifier<AsyncValue<List<BudgetEntry>>> {
   BudgetsController(this._repo, this._ref) : super(const AsyncValue.loading()) {
     refresh();
   }
-
-  Future<void> refresh() async {
+  
+  Future<void> refresh({bool silent = false}) async {
     final categoriesState = _ref.read(categoriesProvider);
     if (!categoriesState.hasValue) return; // wait; the listener below re-triggers us
 
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    if (!silent) state = const AsyncValue.loading();
+
+    final next = await AsyncValue.guard(() async {
       final budgets = await _repo.list();
       final categories = categoriesState.value!;
 
@@ -123,8 +131,13 @@ class BudgetsController extends StateNotifier<AsyncValue<List<BudgetEntry>>> {
         entries.add(entry);
         await BudgetNotificationService.instance.updateBudget(entry);
       }
-            return entries;
+      return entries;
     });
+
+    if (mounted) {
+      if (silent && next.hasError) return; // keep showing the last good data
+      state = next;
+    }
   }
 
   Future<void> create(BudgetCreate data) async {

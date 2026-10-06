@@ -1,11 +1,11 @@
 from app.crud.categories import (
+    DEFAULT_CATEGORIES,
     create_category,
     delete_category,
     get_category,
     list_categories,
     seed_default_categories,
-    DEFAULT_CATEGORIES
-    )
+)
 from app.models.transactions import TransactionType
 
 

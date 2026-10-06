@@ -1,4 +1,5 @@
-from datetime import date
+import calendar
+from datetime import date, timedelta
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -119,3 +120,37 @@ def compute_budget_status(
         "status": budget_status,
         "threshold_crossed": threshold_crossed,
     }
+    
+def update_budget(db: Session, budget: Budget, **fields) -> Budget:
+    for key, value in fields.items():
+        setattr(budget, key, value)
+    db.commit()
+    db.refresh(budget)
+    return budget
+
+def _add_months(d: date, months: int) -> date:
+    y, m = divmod(d.year * 12 + d.month - 1 + months, 12)
+    m += 1
+    return date(y, m, min(d.day, calendar.monthrange(y, m)[1]))
+
+def current_window(budget: Budget, as_of: date | None = None) -> tuple[date, date]:
+    today = as_of or date.today()
+    anchor = budget.period_start
+
+    if budget.period == BudgetPeriod.CUSTOM:
+        return budget.period_start, budget.period_end   # fixed, never rolls
+
+    if budget.period == BudgetPeriod.WEEKLY:
+        n = max(0, (today - anchor).days // 7)
+        start = anchor + timedelta(days=7 * n)
+        return start, start + timedelta(days=6)
+
+    step = 1 if budget.period == BudgetPeriod.MONTHLY else 12
+    months = (today.year - anchor.year) * 12 + (today.month - anchor.month)
+    n = max(0, months // step)
+    start = _add_months(anchor, n * step)
+    if start > today and n > 0:                  # today is before this month's anchor day
+        n -= 1
+        start = _add_months(anchor, n * step)
+    end = _add_months(anchor, (n + 1) * step) - timedelta(days=1)
+    return start, end

@@ -1,11 +1,12 @@
 from datetime import date, datetime
 from decimal import Decimal
-
-from pydantic import BaseModel, ConfigDict, Field
 from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+
 from app.models.budgets import BudgetPeriod
 from app.models.transactions import TransactionType
-from pydantic import StringConstraints
+
 
 class UserCreate(BaseModel):
     email: str
@@ -97,6 +98,14 @@ class BudgetStatus(BaseModel):
     status: str
     threshold_crossed: bool
     
+class BudgetUpdate(BaseModel):
+    category_id: int | None = None
+    amount: Decimal | None = Field(default=None, gt=0)
+    period: BudgetPeriod | None = None
+    period_start: date | None = None
+    period_end: date | None = None
+    alert_threshold_percent: int | None = Field(default=None, ge=0, le=100)
+
 class ReportSummary(BaseModel):
     total_income: Decimal
     total_expense: Decimal

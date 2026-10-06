@@ -1,15 +1,12 @@
 from contextlib import asynccontextmanager
 
-from app.routers import reports
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.db.database import engine, Base
 from app.crud.categories import seed_default_categories
-
-from app.routers import transactions
-from app.routers import auth, budgets, categories
 from app.db import database
+from app.db.database import Base, engine
+from app.routers import auth, budgets, categories, reports, transactions
 
 
 @asynccontextmanager
