@@ -206,3 +206,13 @@ JSON response
 
 
 -m uvicorn app.main:app --reload
+
+
+4. budget_allocations
+
+Your separation is right, so I'd leave this until 1 to 3 are merged and keep the shape small:
+
+Table: budget_allocations(id, user_id, category_id, month DATE, assigned NUMERIC(12,2)) with UNIQUE(user_id, category_id, month). Always store month as the first of the month.
+Derived, never stored: activity is the month's expenses in that category, available = prior_available + assigned - activity, and ready_to_assign = income_to_date - sum(assigned). Computing these on read means a transaction edit can't leave them stale, which is the failure mode you're fixing in step 1.
+Decide before building: whether overspending carries into next month's available as a negative or resets to zero. It changes the whole feel of the feature, and it's much harder to change later than the table is.
+Transfers: your TransactionType now includes savings and debt, but get_summary ignores them in net. Decide how they interact with ready_to_assign before you write it, or the numbers will disagree with the Reports screen.
