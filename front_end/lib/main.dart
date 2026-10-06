@@ -60,6 +60,7 @@ class _AppRoot extends ConsumerWidget {
         );
       case SessionStatus.signedOut:
         return LoginScreen(
+          initialError: session.error,
           onSignIn: ({required email, required password}) =>
               ref.read(sessionProvider.notifier).login(email: email, password: password),
         );
@@ -196,6 +197,7 @@ class _HomeTab extends ConsumerWidget {
             transactions: transactions,
             budgetEntries: budgetEntries,
             onAddTransaction: () => _openAddEditTransaction(context, ref),
+            onTransactionTap: (t) => _openAddEditTransaction(context, ref, existing: t),
             onViewBudgets: onViewBudgets,
           ),
         ),

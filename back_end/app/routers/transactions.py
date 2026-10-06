@@ -87,20 +87,19 @@ def update_existing_transaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    transaction = update_transaction(
+    transaction = get_transaction(
         db=db,
         transaction_id=transaction_id,
-        user_id=current_user.id,
+        user_id=current_user.id
+    )
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    return update_transaction(
+        db=db,
+        transaction=transaction,
         **transaction_data.model_dump(exclude_unset=True),
     )
-
-    if not transaction:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Transaction not found",
-        )
-
-    return transaction
 
 
 @router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -109,14 +108,12 @@ def remove_transaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    deleted = delete_transaction(
+    transaction = get_transaction(
         db=db,
         transaction_id=transaction_id,
-        user_id=current_user.id,
+        user_id=current_user.id
     )
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
 
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Transaction not found",
-        )
+    delete_transaction(db=db, transaction=transaction)

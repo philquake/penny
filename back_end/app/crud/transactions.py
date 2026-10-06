@@ -84,7 +84,11 @@ def update_transaction(
     transaction_date: date | None = None,
     category_id: int | None = None,
     description: str | None = None,
+    type: TransactionType | None = None,
 ) -> Transaction:
+    
+    if type is not None:
+        transaction.type = type
 
     if amount is not None:
         transaction.amount = amount

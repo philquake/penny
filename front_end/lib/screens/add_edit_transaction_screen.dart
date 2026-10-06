@@ -266,9 +266,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
             categoryId: _category!.id,
             amount: amountString,
             type: _type,
-            description: _descriptionController.text.trim().isEmpty
-                ? null
-                : _descriptionController.text.trim(),
+            description: _descriptionController.text.trim(),
             transactionDate: _date,
           ),
         );
@@ -278,9 +276,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
             categoryId: _category!.id,
             amount: amountString,
             type: _type,
-            description: _descriptionController.text.trim().isEmpty
-                ? null
-                : _descriptionController.text.trim(),
+            description: _descriptionController.text.trim(),
             transactionDate: _date,
           ),
         );

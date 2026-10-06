@@ -25,6 +25,7 @@ class DashboardScreen extends StatefulWidget {
   final VoidCallback onAddTransaction;
   final VoidCallback onViewBudgets;
   final VoidCallback? onViewTransactions;
+  final void Function(Transaction)? onTransactionTap;
 
   const DashboardScreen({
     super.key,
@@ -34,6 +35,7 @@ class DashboardScreen extends StatefulWidget {
     required this.onAddTransaction,
     required this.onViewBudgets,
     this.onViewTransactions,
+    this.onTransactionTap,
   });
 
   @override
@@ -251,6 +253,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       return TransactionRow(
                                         transaction: recent[i],
                                         category: category,
+                                        onTap: widget.onTransactionTap == null
+                                        ? null
+                                        : () => widget.onTransactionTap!(recent[i]),
                                       );
                                     },
                                   ),
@@ -273,6 +278,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: _ExpensesList(
                       transactions: widget.transactions,
                       categories: widget.categories,
+                      onTransactionTap: widget.onTransactionTap,
                     ),
                   ),
                 ),
@@ -302,10 +308,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 class _ExpensesList extends StatefulWidget {
   final List<Transaction> transactions;
   final List<Category> categories;
+  final void Function(Transaction)? onTransactionTap;
 
   const _ExpensesList({
     required this.transactions,
     required this.categories,
+    this.onTransactionTap,
   });
 
   @override
@@ -415,9 +423,12 @@ class _ExpensesListState extends State<_ExpensesList> {
                     final category = _categoryFor(rows[i].categoryId);
                     if (category == null) return const SizedBox.shrink();
                     return TransactionRow(
-                      transaction: rows[i],
-                      category: category,
-                    );
+                    transaction: rows[i],
+                    category: category,
+                    onTap: widget.onTransactionTap == null
+                        ? null
+                        : () => widget.onTransactionTap!(rows[i]),
+                  );
                   }),
                   if (i != rows.length - 1)
                     const Divider(height: 1, indent: 56),
