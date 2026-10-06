@@ -7,6 +7,8 @@ from app.core.security import create_access_token, verify_password, hash_passwor
 from app.crud.users import create_user, get_user_by_email
 from app.schemas import UserCreate, UserOut
 from app.schemas import Token
+from app.core.deps import get_current_user
+from app.models import User
 
 router = APIRouter(
     prefix="/auth",
@@ -63,3 +65,7 @@ def login(
         "access_token": access_token,
         "token_type": "bearer",
     }
+    
+@router.get("/me", response_model=UserOut)
+def read_current_user(current_user: User = Depends(get_current_user)):
+    return current_user

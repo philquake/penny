@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/theme_x.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 /// Login screen for Penny.
@@ -16,8 +16,9 @@ class LoginScreen extends StatefulWidget {
     required String password,
   }) onSignIn;
 
-  const LoginScreen({super.key, required this.onSignIn});
+  final String? initialError;
 
+  const LoginScreen({super.key, required this.onSignIn, this.initialError});
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -33,6 +34,23 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isSubmitting = false;
   String? _errorText;
+  
+  @override
+  void initState() {
+    super.initState();
+    _errorText = widget.initialError;
+    _loadLastEmail();
+  }
+
+  Future<void> _loadLastEmail() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final email = prefs.getString('last_email');
+      if (email != null && mounted && _usernameController.text.isEmpty) {
+        _usernameController.text = email;
+      }
+    } catch (_) {}
+  }
 
   @override
   void dispose() {

@@ -44,4 +44,9 @@ class AuthRepository {
     );
     return Token.fromJson(response.data as Map<String, dynamic>);
   }
+
+  Future<User> me() async {
+    final response = await _client.dio.get('/auth/me');
+    return User.fromJson(response.data as Map<String, dynamic>);
+  }
 }

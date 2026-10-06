@@ -6,9 +6,11 @@ import '../core/api_config.dart';
 import '../core/token_storage.dart';
 import '../data/auth_repository.dart';
 import '../models/user.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum SessionStatus { bootstrapping, signedOut, signedIn }
 
+const lastEmailKey = 'last_email';
 class SessionState {
   final SessionStatus status;
   final User? user;
@@ -46,23 +48,48 @@ class SessionController extends StateNotifier<SessionState> {
       state = const SessionState.signedOut();
       return;
     }
-    // A token exists from a previous session, but with no /auth/me we
-    // can't re-fetch the profile — fall back to a stub until that
-    // endpoint lands. The app still works; Settings will show a
-    // placeholder name.
-    state = SessionState.signedIn(_stubUser());
+      try {
+    final user = await _authRepository.me();   // verifies the token and loads the real profile
+    state = SessionState.signedIn(user);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await _tokenStorage.deleteToken();
+        state = const SessionState.signedOut(
+          error: 'Your session expired. Please sign in again.',
+        );
+      } else {
+        state = SessionState.signedOut(error: _messageFor(e));
+      }
+    }
   }
 
   Future<String?> login({required String email, required String password}) async {
-    try {
-      final token = await _authRepository.login(email: email, password: password);
-      await _tokenStorage.saveToken(token.accessToken);
-      state = SessionState.signedIn(_stubUser(email: email));
-      return null;
+  try {
+    final token = await _authRepository.login(email: email, password: password);
+    await _tokenStorage.saveToken(token.accessToken);
+    final user = await _authRepository.me();
+    await _rememberEmail(email);
+    state = SessionState.signedIn(user);
+    return null;
     } on DioException catch (e) {
       return _messageFor(e);
     }
   }
+
+  Future<void> _rememberEmail(String email) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(lastEmailKey, email);
+    } catch (_) {}
+  }
+
+  void handleUnauthorized() {
+  if (state.status != SessionStatus.signedIn) return;
+  state = const SessionState.signedOut(
+    error: 'Your session expired. Please sign in again.',
+  );
+}
+
 
   Future<String?> signup({
     required String email,
@@ -91,13 +118,6 @@ class SessionController extends StateNotifier<SessionState> {
     state = const SessionState.signedOut();
   }
 
-  User _stubUser({String? email}) => User(
-        id: 0,
-        email: email ?? state.user?.email ?? '',
-        fullName: (email ?? '').split('@').first,
-        createdAt: DateTime.now(),
-      );
-
   String _messageFor(DioException e) {
     if (e.response?.statusCode == 401) return 'Incorrect email or password.';
     if (e.response?.statusCode == 400) return 'That email is already registered.';
@@ -114,9 +134,11 @@ final apiClientProvider = Provider<ApiClient>((ref) => apiClient);
 final authRepositoryProvider =
     Provider((ref) => AuthRepository(ref.watch(apiClientProvider)));
 
-final sessionProvider = StateNotifierProvider<SessionController, SessionState>(
-  (ref) => SessionController(
+final sessionProvider = StateNotifierProvider<SessionController, SessionState>((ref) {
+  final controller = SessionController(
     ref.watch(authRepositoryProvider),
     ref.watch(tokenStorageProvider),
-  ),
-);
+  );
+  ref.watch(apiClientProvider).onUnauthorized = () async => controller.handleUnauthorized();
+  return controller;
+});

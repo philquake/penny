@@ -6,7 +6,7 @@ class ApiClient {
   late final Dio dio;
 
   final TokenStorage tokenStorage;
-  final Future<void> Function()? onUnauthorized;
+  Future<void> Function()? onUnauthorized;
 
   ApiClient({
     required this.tokenStorage,
