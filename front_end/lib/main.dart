@@ -236,9 +236,9 @@ class _BudgetsTab extends ConsumerWidget {
             return BudgetsScreen(
               entries: entries,
               expenseCategories: expenseCategories,
-              onCreate: (data) =>
-                  ref.read(budgetsProvider.notifier).create(data),
+              onCreate: (data) => ref.read(budgetsProvider.notifier).create(data),
               onDelete: (id) => ref.read(budgetsProvider.notifier).delete(id),
+              onUpdate: (id, data) => ref.read(budgetsProvider.notifier).update(id, data),
             );
           },
         );

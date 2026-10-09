@@ -504,14 +504,6 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
     return totals;
   }
 
-  double get _selectedTotal {
-    if (_selectedDate.year != _displayedMonth.year ||
-        _selectedDate.month != _displayedMonth.month) {
-      return 0;
-    }
-    return _dailyExpenses[_selectedDate.day] ?? 0;
-  }
-
   void _changeMonth(int amount) {
     final nextMonth = DateTime(
       _displayedMonth.year,
@@ -686,17 +678,6 @@ class _DailySpendingCalendarState extends State<_DailySpendingCalendar> {
         const SizedBox(height: 8),
         const Divider(height: 1),
         const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Spent on ${_monthNames[_selectedDate.month - 1]} ${_selectedDate.day}',
-                style: context.text.bodySmall,
-              ),
-            ),
-            AmountText(_selectedTotal.toStringAsFixed(2), colorBySign: false),
-          ],
-        ),
       ],
     );
   }

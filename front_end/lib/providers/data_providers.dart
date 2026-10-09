@@ -163,6 +163,11 @@ class BudgetsController extends StateNotifier<AsyncValue<List<BudgetEntry>>> {
     await _repo.delete(id);
     await refresh();
   }
+
+  Future<void> update(int id, BudgetUpdate data) async {
+  await _repo.update(id, data);
+  await refresh();
+}
 }
 
 final budgetsProvider =

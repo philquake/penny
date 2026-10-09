@@ -10,10 +10,12 @@ import '../core/theme/theme_x.dart';
 
 /// Budgets screen — one ledger card per budget: category, period, a
 /// progress bar colored by the backend's computed status, spent/remaining.
+/// Tap a card (or use its menu) to edit; the menu also deletes.
 class BudgetsScreen extends StatefulWidget {
   final List<BudgetEntry> entries;
   final List<Category> expenseCategories;
   final void Function(BudgetCreate) onCreate;
+  final Future<void> Function(int id, BudgetUpdate data)? onUpdate;
   final void Function(int id) onDelete;
 
   const BudgetsScreen({
@@ -22,6 +24,7 @@ class BudgetsScreen extends StatefulWidget {
     required this.expenseCategories,
     required this.onCreate,
     required this.onDelete,
+    this.onUpdate,
   });
 
   @override
@@ -84,7 +87,6 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
     if (created != null) {
       widget.onCreate(created);
-      // Optimistic placeholder — real spend comes from the server on
       // next fetch; show it fresh (0% used) until then.
       setState(() {
         _entries.add(
@@ -113,6 +115,42 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           ),
         );
       });
+    }
+  }
+
+  Future<void> _showEditBudgetSheet(BudgetEntry entry) async {
+    final update = widget.onUpdate;
+    if (update == null || entry.budget.id < 0) return;
+    if (widget.expenseCategories.isEmpty) return;
+
+    final edited = await showModalBottomSheet<BudgetCreate>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _AddBudgetSheet(
+        categories: widget.expenseCategories,
+        existing: entry,
+      ),
+    );
+    if (edited == null) return;
+
+    try {
+      await update(
+        entry.budget.id,
+        BudgetUpdate(
+          categoryId: edited.categoryId,
+          amount: edited.amount,
+          period: edited.period,
+          periodStart: edited.periodStart,
+          periodEnd: edited.periodEnd,
+          alertThresholdPercent: edited.alertThresholdPercent,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update budget.')),
+      );
     }
   }
 
@@ -154,6 +192,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         padding: const EdgeInsets.only(bottom: 14),
                         child: _BudgetCard(
                           entry: entry,
+                          onEdit: () => _showEditBudgetSheet(entry),
                           onDelete: () => _confirmDelete(entry),
                         ),
                       ),
@@ -169,11 +208,15 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
 
 class _BudgetCard extends StatelessWidget {
   final BudgetEntry entry;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  const _BudgetCard({required this.entry, required this.onDelete});
+  const _BudgetCard({
+    required this.entry,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
-  // Was a getter, but it needs theme colors, so it now takes them in.
   Color _barColor(ColorScheme colors, FinanceColors finance) {
     switch (entry.status.status) {
       case 'exceeded':
@@ -207,103 +250,115 @@ class _BudgetCard extends StatelessWidget {
     final fraction = limit > 0 ? (spent / limit).clamp(0.0, 1.2) : 0.0;
     final remaining = double.tryParse(entry.status.remainingAmount) ?? 0;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.colors.surface,
+    return Material(
+      color: context.colors.surface,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: context.colors.outlineVariant),
+        side: BorderSide(color: context.colors.outlineVariant),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: context.colors.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  categoryIcon(entry.category.icon),
-                  size: 15,
-                  color: context.colors.primary,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      entry.category.name,
-                      style: context.text.bodyMedium?.copyWith(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
+              Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: context.colors.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    Text(_periodLabel, style: context.text.bodySmall),
-                  ],
+                    alignment: Alignment.center,
+                    child: Icon(
+                      categoryIcon(entry.category.icon),
+                      size: 15,
+                      color: context.colors.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          entry.category.name,
+                          style: context.text.bodyMedium?.copyWith(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(_periodLabel, style: context.text.bodySmall),
+                      ],
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    icon: Icon(
+                      Icons.more_horiz_rounded,
+                      size: 20,
+                      color: context.colors.outline,
+                    ),
+                    onSelected: (v) => v == 'edit' ? onEdit() : onDelete(),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'edit', child: Text('Edit')),
+                      PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Stack(
+                      children: [
+                        Container(
+                          height: 6,
+                          color: context.colors.outlineVariant,
+                        ),
+                        Container(
+                          height: 6,
+                          width: constraints.maxWidth * fraction,
+                          color: _barColor(context.colors, context.finance),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                onPressed: onDelete,
-                icon: Icon(
-                  Icons.more_horiz_rounded,
-                  size: 20,
-                  color: context.colors.outline,
-                ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '\$${spent.toStringAsFixed(0)} of \$${limit.toStringAsFixed(0)}',
+                    style: context.text.headlineMedium?.copyWith(
+                      fontSize: 13,
+                      color: context.colors.onSurface,
+                    ),
+                  ),
+                  Text(
+                    remaining >= 0
+                        ? '\$${remaining.toStringAsFixed(0)} left'
+                        : '\$${remaining.abs().toStringAsFixed(0)} over',
+                    style: context.text.headlineMedium?.copyWith(
+                      fontSize: 13,
+                      color: remaining >= 0
+                          ? context.colors.onSurfaceVariant
+                          : context.finance.expense,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return Stack(
-                  children: [
-                    Container(height: 6, color: context.colors.outlineVariant),
-                    Container(
-                      height: 6,
-                      width: constraints.maxWidth * fraction,
-                      color: _barColor(context.colors, context.finance),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '\$${spent.toStringAsFixed(0)} of \$${limit.toStringAsFixed(0)}',
-                style: context.text.headlineMedium?.copyWith(
-                  fontSize: 13,
-                  color: context.colors.onSurface,
-                ),
-              ),
-              Text(
-                remaining >= 0
-                    ? '\$${remaining.toStringAsFixed(0)} left'
-                    : '\$${remaining.abs().toStringAsFixed(0)} over',
-                style: context.text.headlineMedium?.copyWith(
-                  fontSize: 13,
-                  color: remaining >= 0
-                      ? context.colors.onSurfaceVariant
-                      : context.finance.expense,
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -351,7 +406,7 @@ class _EmptyState extends StatelessWidget {
               child: Text(
                 'Add Budget',
                 style: context.text.bodyMedium?.copyWith(
-                  color: context.colors.onPrimary,
+                  color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -363,13 +418,15 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-/// Modal sheet for creating a budget: category (expense-type only, since
-/// budgets track spending), amount, period, start date, alert threshold.
+/// Modal sheet for creating or editing a budget: category (expense-type
+/// only), amount, period, start date, alert threshold. Pass [existing] to
+/// edit; fields are pre-filled and the header reads "Edit Budget".
 /// period_end is derived from period_start + period rather than asked for
 /// directly — one less date for the person to get wrong.
 class _AddBudgetSheet extends StatefulWidget {
   final List<Category> categories;
-  const _AddBudgetSheet({required this.categories});
+  final BudgetEntry? existing;
+  const _AddBudgetSheet({required this.categories, this.existing});
 
   @override
   State<_AddBudgetSheet> createState() => _AddBudgetSheetState();
@@ -383,11 +440,25 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
   late DateTime _customEnd;
   double _threshold = 80;
 
+  bool get _isEditing => widget.existing != null;
+
   @override
   void initState() {
     super.initState();
-    _category = widget.categories.first;
-    _customEnd = _start.add(const Duration(days: 29));
+    final e = widget.existing;
+    if (e == null) {
+      _category = widget.categories.first;
+      _customEnd = _start.add(const Duration(days: 29));
+    } else {
+      final match = widget.categories.where((c) => c.id == e.budget.categoryId);
+      _category = match.isNotEmpty ? match.first : widget.categories.first;
+      _amountController.text = e.budget.amount;
+      _period = e.budget.period;
+      _start = e.budget.periodStart;
+      _customEnd = e.budget.periodEnd;
+      // Slider moves in steps of 5.
+      _threshold = (e.budget.alertThresholdPercent / 5).round() * 5.0;
+    }
   }
 
   @override
@@ -563,13 +634,13 @@ class _AddBudgetSheetState extends State<_AddBudgetSheet> {
                       child: const Text('Cancel'),
                     ),
                     Text(
-                      'New Budget',
+                      _isEditing ? 'Edit Budget' : 'New Budget',
                       style: context.text.titleLarge?.copyWith(fontSize: 16),
                     ),
                     TextButton(
                       onPressed: _canSave ? _handleSave : null,
                       child: Text(
-                        'Add',
+                        _isEditing ? 'Save' : 'Add',
                         style: TextStyle(
                           color: _canSave
                               ? context.colors.primary

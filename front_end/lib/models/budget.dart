@@ -104,3 +104,32 @@ class BudgetStatus {
   }
 }
 
+class BudgetUpdate {
+  final int? categoryId;
+  final String? amount;
+  final BudgetPeriod? period;
+  final DateTime? periodStart;
+  final DateTime? periodEnd;
+  final int? alertThresholdPercent;
+
+  const BudgetUpdate({
+    this.categoryId,
+    this.amount,
+    this.period,
+    this.periodStart,
+    this.periodEnd,
+    this.alertThresholdPercent,
+  });
+
+  Map<String, dynamic> toJson() => {
+        if (categoryId != null) 'category_id': categoryId,
+        if (amount != null) 'amount': amount,
+        if (period != null) 'period': period!.value,
+        if (periodStart != null) 'period_start': _dateOnly(periodStart!),
+        if (periodEnd != null) 'period_end': _dateOnly(periodEnd!),
+        if (alertThresholdPercent != null)
+          'alert_threshold_percent': alertThresholdPercent,
+      };
+
+  static String _dateOnly(DateTime d) => d.toIso8601String().split('T').first;
+}

@@ -46,4 +46,9 @@ class BudgetsRepository {
   Future<void> delete(int id) async {
     await _client.dio.delete('/budgets/$id');
   }
+
+  Future<Budget> update(int id, BudgetUpdate data) async {
+  final response = await _client.dio.put('/budgets/$id', data: data.toJson());
+  return Budget.fromJson(response.data as Map<String, dynamic>);
+  }
 }
