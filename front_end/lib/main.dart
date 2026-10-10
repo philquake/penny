@@ -5,6 +5,7 @@ import 'core/api_config.dart';
 import 'models/category.dart';
 import 'models/transaction_type.dart';
 import 'models/transactions.dart';
+import 'models/budget_period.dart';
 import 'providers/data_providers.dart';
 import 'providers/session.dart';
 import 'screens/add_edit_transaction_screen.dart';
@@ -254,6 +255,11 @@ class _ReportsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final categoriesState = ref.watch(categoriesProvider);
     final transactionsState = ref.watch(transactionsProvider);
+    final budgetEntries = ref.watch(budgetsProvider).asData?.value;
+
+    final monthlyLimit = (budgetEntries ?? [])
+        .where((e) => e.budget.period == BudgetPeriod.monthly)
+        .fold(0.0, (sum, e) => sum + (double.tryParse(e.budget.amount) ?? 0));
 
     return _asyncBody(
       context,
@@ -266,6 +272,7 @@ class _ReportsTab extends ConsumerWidget {
             return ReportsScreen(
               transactions: transactions,
               categories: categories,
+              budgetLimit: monthlyLimit > 0 ? monthlyLimit : null,
             );
           },
         );
@@ -297,6 +304,10 @@ class _SettingsTab extends ConsumerWidget {
       // dynamic is a reasonable follow-up (turn ApiConfig into an
       // instance stored alongside the token, read at ApiClient creation).
       serverAddress: ApiConfig.baseUrl,
+      isDarkMode: Theme.of(context).brightness == Brightness.dark,
+      onDarkModeChanged: (isDark) => ref
+          .read(themeControllerProvider.notifier)
+          .setPreference(isDark ? ThemePreference.dark : ThemePreference.light),
       onSignOut: () => ref.read(sessionProvider.notifier).signOut(),
       onNotificationsChanged: () =>
           ref.read(budgetsProvider.notifier).refresh(),

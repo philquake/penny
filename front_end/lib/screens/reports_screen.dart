@@ -17,11 +17,13 @@ enum _ReportRange { month, quarter, year }
 class ReportsScreen extends StatefulWidget {
   final List<Transaction> transactions;
   final List<Category> categories;
+  final double? budgetLimit;
 
   const ReportsScreen({
     super.key,
     required this.transactions,
     required this.categories,
+    this.budgetLimit,
   });
 
   @override
@@ -215,6 +217,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ),
                   ],
                   const SizedBox(height: 32),
+                                    const SizedBox(height: 32),
+                  Text('Spending pace', style: context.text.titleMedium),
+                  const SizedBox(height: 4),
+                  Text(
+                    'This month vs. last month',
+                    style: context.text.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _CumulativeSpendingChart(
+                    transactions: widget.transactions,
+                    budgetLimit: widget.budgetLimit,
+                    currentColor: finance.expense,
+                    previousColor: colors.outline,
+                  ),
                   Text('Income vs. expenses', style: context.text.titleMedium),
                   const SizedBox(height: 4),
                   Text(
@@ -457,6 +475,184 @@ class _LegendDot extends StatelessWidget {
           style: context.text.bodySmall?.copyWith(
             color: context.colors.onSurfaceVariant,
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Running total of expenses by day of month, this month vs. last month.
+/// Client-side only; the current month's line stops at today.
+class _CumulativeSpendingChart extends StatelessWidget {
+  final List<Transaction> transactions;
+  final double? budgetLimit;
+  final Color currentColor;
+  final Color previousColor;
+
+  const _CumulativeSpendingChart({
+    required this.transactions,
+    required this.budgetLimit,
+    required this.currentColor,
+    required this.previousColor,
+  });
+
+  List<FlSpot> _series(DateTime monthStart, int throughDay) {
+    final daysInMonth = DateTime(monthStart.year, monthStart.month + 1, 0).day;
+    final lastDay = throughDay.clamp(1, daysInMonth);
+    final daily = List<double>.filled(daysInMonth + 1, 0);
+
+    for (final t in transactions) {
+      final d = t.transactionDate;
+      if (t.type != TransactionType.expense ||
+          d.year != monthStart.year ||
+          d.month != monthStart.month) {
+        continue;
+      }
+      daily[d.day] += double.tryParse(t.amount) ?? 0;
+    }
+
+    var running = 0.0;
+    final spots = <FlSpot>[];
+    for (var day = 1; day <= lastDay; day++) {
+      running += daily[day];
+      spots.add(FlSpot(day.toDouble(), running));
+    }
+    return spots;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final thisStart = DateTime(now.year, now.month, 1);
+    final lastStart = DateTime(now.year, now.month - 1, 1);
+    final thisDays = DateTime(now.year, now.month + 1, 0).day;
+    final lastDays = DateTime(lastStart.year, lastStart.month + 1, 0).day;
+
+    final thisSpots = _series(thisStart, now.day);
+    final lastSpots = _series(lastStart, lastDays);
+
+    final thisTotal = thisSpots.last.y;
+    final lastSameDay = lastSpots[now.day.clamp(1, lastDays) - 1].y;
+    final limit = budgetLimit;
+
+    final maxY = [
+      thisTotal,
+      lastSpots.last.y,
+      limit ?? 0,
+      1.0,
+    ].reduce((a, b) => a > b ? a : b) * 1.15;
+
+    final labelStyle = context.text.bodySmall?.copyWith(
+      color: context.colors.onSurfaceVariant,
+    );
+    final diff = thisTotal - lastSameDay;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          diff == 0
+              ? 'Same as this point last month'
+              : '\$${diff.abs().toStringAsFixed(0)} '
+                    '${diff > 0 ? 'more' : 'less'} than this point last month',
+          style: context.text.bodyMedium?.copyWith(
+            color: diff > 0
+                ? context.finance.expense
+                : context.colors.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 180,
+          child: LineChart(
+            LineChartData(
+              minX: 1,
+              maxX: (thisDays > lastDays ? thisDays : lastDays).toDouble(),
+              minY: 0,
+              maxY: maxY,
+              gridData: const FlGridData(show: false),
+              borderData: FlBorderData(show: false),
+              titlesData: FlTitlesData(
+                leftTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: 7,
+                    getTitlesWidget: (value, meta) => Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text('${value.toInt()}', style: labelStyle),
+                    ),
+                  ),
+                ),
+              ),
+              extraLinesData: ExtraLinesData(
+                horizontalLines: [
+                  if (limit != null && limit > 0)
+                    HorizontalLine(
+                      y: limit,
+                      color: context.colors.outline,
+                      strokeWidth: 1,
+                      dashArray: [6, 4],
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.topLeft,
+                        style: labelStyle,
+                        labelResolver: (_) =>
+                            'Budget \$${limit.toStringAsFixed(0)}',
+                      ),
+                    ),
+                ],
+              ),
+              lineTouchData: LineTouchData(
+                touchTooltipData: LineTouchTooltipData(
+                  getTooltipColor: (_) => context.colors.inverseSurface,
+                  getTooltipItems: (spots) => [
+                    for (final s in spots)
+                      LineTooltipItem(
+                        'Day ${s.x.toInt()}\n\$${s.y.toStringAsFixed(2)}',
+                        TextStyle(
+                          color: context.colors.onInverseSurface,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: lastSpots,
+                  color: previousColor,
+                  barWidth: 2,
+                  dotData: const FlDotData(show: false),
+                ),
+                LineChartBarData(
+                  spots: thisSpots,
+                  color: currentColor,
+                  barWidth: 3,
+                  isCurved: false,
+                  dotData: const FlDotData(show: false),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _LegendDot(color: currentColor, label: 'This month'),
+            const SizedBox(width: 20),
+            _LegendDot(color: previousColor, label: 'Last month'),
+          ],
         ),
       ],
     );
