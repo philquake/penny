@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from app.models.budgets import BudgetPeriod
 from app.models.transactions import TransactionType
+from app.models.debts import DebtKind, EntryType
 
 
 class UserCreate(BaseModel):
@@ -149,3 +150,88 @@ class CategoryOut(BaseModel):
     is_default: bool
 
     model_config = ConfigDict(from_attributes=True)
+    
+class DebtCreate(BaseModel):
+    name: str
+    kind: DebtKind
+    opening_balance: Decimal = Field(ge=0)
+    apr: Decimal = Field(ge=0, le=100)
+    minimum_payment: Decimal = Field(default=Decimal("0"), ge=0)
+    credit_limit: Decimal | None = Field(default=None, gt=0)
+    due_day: int | None = Field(default=None, ge=1, le=31)
+    start_date: date
+
+
+class DebtUpdate(BaseModel):
+    name: str | None = None
+    apr: Decimal | None = Field(default=None, ge=0, le=100)
+    minimum_payment: Decimal | None = Field(default=None, ge=0)
+    credit_limit: Decimal | None = Field(default=None, gt=0)
+    due_day: int | None = Field(default=None, ge=1, le=31)
+    is_active: bool | None = None
+
+
+class DebtOut(BaseModel):
+    id: int
+    name: str
+    kind: DebtKind
+    opening_balance: Decimal
+    balance: Decimal
+    apr: Decimal
+    minimum_payment: Decimal
+    credit_limit: Decimal | None
+    utilization_percent: Decimal | None
+    due_day: int | None
+    next_due_date: date | None
+    monthly_interest_estimate: Decimal
+    start_date: date
+    is_active: bool
+
+
+class DebtEntryCreate(BaseModel):
+    type: EntryType
+    amount: Decimal = Field(gt=0)
+    entry_date: date
+    note: str | None = None
+
+
+class DebtEntryOut(BaseModel):
+    id: int
+    debt_id: int
+    type: EntryType
+    amount: Decimal
+    entry_date: date
+    note: str | None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PayoffRow(BaseModel):
+    month: int
+    payment: Decimal
+    interest: Decimal
+    principal: Decimal
+    balance: Decimal
+
+
+class PayoffResult(BaseModel):
+    payable: bool
+    months: int | None
+    total_interest: Decimal
+    total_paid: Decimal
+    payoff_date: date | None
+    schedule: list[PayoffRow]
+
+
+class PlanStep(BaseModel):
+    debt_id: int
+    name: str
+    month: int
+
+
+class PlanResult(BaseModel):
+    strategy: str
+    payable: bool
+    months: int | None
+    total_interest: Decimal | None
+    payoff_date: date | None
+    payoff_order: list[PlanStep]

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.crud.categories import seed_default_categories
 from app.db import database
 from app.db.database import Base, engine
-from app.routers import auth, budgets, categories, reports, transactions
+from app.routers import auth, budgets, categories, reports, transactions, debts
 
 
 @asynccontextmanager
@@ -54,6 +54,7 @@ app.include_router(categories.router)
 app.include_router(transactions.router)
 app.include_router(budgets.router)
 app.include_router(reports.router)
+app.include_router(debts.router)
 
 # --------------------------------------------------
 # Health check

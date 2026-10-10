@@ -20,6 +20,8 @@ import 'services/budget_notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/theme/theme_x.dart';
+import 'screens/debt_detail_screen.dart';
+import 'screens/debts_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -91,6 +93,7 @@ class _AppShellState extends State<_AppShell> {
     final tabs = [
       _HomeTab(onViewBudgets: () => setState(() => _index = 1)),
       const _BudgetsTab(),
+      const _DebtsTab(),
       const _ReportsTab(),
       const _SettingsTab(),
     ];
@@ -112,13 +115,17 @@ class _AppShellState extends State<_AppShell> {
             label: 'Budgets',
           ),
           NavigationDestination(
+            icon: Icon(Icons.credit_card_rounded),
+            label: 'Debts',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.pie_chart_rounded),
             label: 'Reports',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_rounded),
             label: 'Settings',
-          ),
+          ),   
         ],
       ),
     );
@@ -328,6 +335,27 @@ class _SettingsTab extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _DebtsTab extends ConsumerWidget {
+  const _DebtsTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _asyncBody(
+      context,
+      ref.watch(debtsProvider),
+      data: (debts) => DebtsScreen(
+        debts: debts,
+        onCreate: (data) => ref.read(debtsProvider.notifier).create(data),
+        onOpen: (debt) => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => DebtDetailScreen(debt: debt)),
+        ),
+        onPlan: (extra, strategy) =>
+            ref.read(debtsRepositoryProvider).plan(extra, strategy),
+      ),
     );
   }
 }

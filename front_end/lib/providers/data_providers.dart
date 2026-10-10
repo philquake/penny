@@ -6,7 +6,9 @@ import '../data/transactions_repository.dart';
 import '../models/budget.dart';
 import '../models/budget_entry.dart';
 import '../models/category.dart';
+import '../models/debt.dart';
 import '../models/transactions.dart';
+import '../data/debts_repository.dart';
 import '../services/budget_notification_service.dart';
 import 'session.dart';
 
@@ -186,3 +188,42 @@ final budgetsProvider =
 
       return controller;
     });
+
+final debtsRepositoryProvider = Provider(
+  (ref) => DebtsRepository(ref.watch(apiClientProvider)),
+);
+
+class DebtsController extends StateNotifier<AsyncValue<List<Debt>>> {
+  final DebtsRepository _repo;
+  DebtsController(this._repo) : super(const AsyncValue.loading()) {
+    refresh();
+  }
+
+  Future<void> refresh({bool silent = false}) async {
+    if (!silent) state = const AsyncValue.loading();
+    final next = await AsyncValue.guard(() => _repo.list());
+    if (!mounted) return;
+    if (silent && next.hasError) return;
+    state = next;
+  }
+
+  Future<void> create(DebtCreate data) async {
+    await _repo.create(data);
+    await refresh(silent: true);
+  }
+
+  Future<void> delete(int id) async {
+    await _repo.delete(id);
+    await refresh(silent: true);
+  }
+
+  Future<void> addEntry(int id, DebtEntryCreate data) async {
+    await _repo.addEntry(id, data);
+    await refresh(silent: true);
+  }
+}
+
+final debtsProvider =
+    StateNotifierProvider<DebtsController, AsyncValue<List<Debt>>>(
+      (ref) => DebtsController(ref.watch(debtsRepositoryProvider)),
+    );
