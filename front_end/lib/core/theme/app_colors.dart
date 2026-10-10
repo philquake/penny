@@ -29,7 +29,7 @@ class FinanceColors extends ThemeExtension<FinanceColors> {
     expenseContainer: Color(0xFFFFE0DE),
     warning: Color(0xFFA66A00),
     warningContainer: Color(0xFFFFE7B3),
-    savings: Color(0xFF087F5B),
+    savings: Color(0xFF172A45),
     neutral: Color(0xFF66706A),
   );
 
@@ -40,7 +40,7 @@ class FinanceColors extends ThemeExtension<FinanceColors> {
     expenseContainer: Color(0xFF54201F),
     warning: Color(0xFFF4C35F),
     warningContainer: Color(0xFF4A3608),
-    savings: Color(0xFF55D6A2),
+    savings: Color(0xFF4A90D9),
     neutral: Color(0xFFAAB4AE),
   );
 
