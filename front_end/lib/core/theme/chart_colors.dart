@@ -4,16 +4,16 @@ import 'package:flutter/material.dart';
 const categorySwatches = <String>[
   '#2E9E7A',
   '#7A6A9C',
-  '#B99A3E',
-  '#4A7A8C',
-  '#D98A2B',
-  '#8C6F52',
-  '#5267A9',
-  '#4D9078',
-  '#D9827B',
-  '#356B7A',
-  '#8A5CC2',
-  '#B5748B',
+  '#101935',
+  '#F2FDFF',
+  '#020887',
+  '#ED474A',
+  '#9AD4D6',
+  '#D58936',
+  '#DB2763',
+  '#07BEB8',
+  '#8F3985',
+  '#48BEFF',
 ];
 
 Color? colorFromHex(String? hex) {
