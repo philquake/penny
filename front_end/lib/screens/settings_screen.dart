@@ -15,6 +15,8 @@ class SettingsScreen extends StatefulWidget {
   final VoidCallback? onChangeServer;
   final VoidCallback onManageCategories;
   final VoidCallback onNotificationsChanged;
+  final bool isDarkMode;
+  final ValueChanged<bool> onDarkModeChanged;
 
   const SettingsScreen({
     super.key,
@@ -23,6 +25,8 @@ class SettingsScreen extends StatefulWidget {
     required this.onSignOut,
     required this.onManageCategories,
     required this.onNotificationsChanged,
+    required this.isDarkMode,
+    required this.onDarkModeChanged,
     this.onChangeServer,
   });
 
@@ -211,7 +215,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-
+                  const _SectionLabel('Appearance'),
+                  _SettingsGroup(
+                    rows: [
+                      _SettingsRow(
+                        label: 'Dark mode',
+                        subtitle: 'Switch between light and dark theme',
+                        icon: Icons.dark_mode_rounded,
+                        trailing: Switch.adaptive(
+                          value: widget.isDarkMode,
+                          activeTrackColor: context.colors.primary,
+                          onChanged: widget.onDarkModeChanged,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
                   const _SectionLabel('Alerts'),
                   _SettingsGroup(
                     rows: [
