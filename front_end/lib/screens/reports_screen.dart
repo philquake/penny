@@ -364,6 +364,22 @@ class _MonthlyTrendChart extends StatelessWidget {
 
     return BarChart(
       BarChartData(
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => context.colors.inverseSurface,
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              final label = rodIndex == 0 ? 'Income' : 'Expenses';
+              return BarTooltipItem(
+                '$label\n\$${rod.toY.toStringAsFixed(2)}',
+                TextStyle(
+                  color: context.colors.onInverseSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              );
+            },
+          ),
+        ),
         maxY: maxVal * 1.15,
         gridData: const FlGridData(show: false),
         borderData: FlBorderData(show: false),

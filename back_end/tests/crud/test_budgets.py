@@ -491,3 +491,94 @@ def test_compute_budget_status_ignores_other_categories(db):
     )
 
     assert result["spent_amount"] == 100
+    
+AS_OF = date(2026, 8, 15)
+def test_monthly_budget_rolls_to_current_window(db):
+    category = create_category(
+        db, name="Food", user_id=None, type=TransactionType.EXPENSE
+    )
+
+    # Anchored in August, with the stale end date the PUT endpoint leaves behind.
+    budget = create_budget(
+        db,
+        user_id=1,
+        category_id=category.id,
+        amount=500,
+        period=BudgetPeriod.MONTHLY,
+        period_start=date(2026, 8, 1),
+        period_end=date(2026, 8, 31),
+        alert_threshold_percent=80,
+    )
+
+    create_transaction(
+        db, user_id=1, amount=100, transaction_date=date(2026, 8, 15),
+        category_id=category.id, type=TransactionType.EXPENSE,
+    )
+    create_transaction(
+        db, user_id=1, amount=40, transaction_date=date(2026, 10, 5),
+        category_id=category.id, type=TransactionType.EXPENSE,
+    )
+
+    result = compute_budget_status(db, budget, as_of=date(2026, 10, 9))
+
+    # Only October counts, not August through now.
+    assert result["spent_amount"] == 40
+    assert result["remaining_amount"] == 460
+
+
+def test_weekly_budget_rolls_forward(db):
+    category = create_category(
+        db, name="Food", user_id=None, type=TransactionType.EXPENSE
+    )
+
+    budget = create_budget(
+        db,
+        user_id=1,
+        category_id=category.id,
+        amount=100,
+        period=BudgetPeriod.WEEKLY,
+        period_start=date(2026, 8, 1),
+        period_end=date(2026, 8, 7),
+        alert_threshold_percent=80,
+    )
+
+    # Aug 1 + 10 weeks = Oct 10, so Oct 9 is still in the Oct 3 to Oct 9 week.
+    create_transaction(
+        db, user_id=1, amount=30, transaction_date=date(2026, 10, 4),
+        category_id=category.id, type=TransactionType.EXPENSE,
+    )
+    create_transaction(
+        db, user_id=1, amount=70, transaction_date=date(2026, 10, 2),
+        category_id=category.id, type=TransactionType.EXPENSE,
+    )
+
+    result = compute_budget_status(db, budget, as_of=date(2026, 10, 9))
+
+    assert result["spent_amount"] == 30
+
+
+def test_custom_budget_does_not_roll(db):
+    category = create_category(
+        db, name="Food", user_id=None, type=TransactionType.EXPENSE
+    )
+
+    budget = create_budget(
+        db,
+        user_id=1,
+        category_id=category.id,
+        amount=500,
+        period=BudgetPeriod.CUSTOM,
+        period_start=date(2026, 8, 12),
+        period_end=date(2026, 9, 6),
+        alert_threshold_percent=80,
+    )
+
+    create_transaction(
+        db, user_id=1, amount=80, transaction_date=date(2026, 8, 20),
+        category_id=category.id, type=TransactionType.EXPENSE,
+    )
+
+    # Long after the window ended, it still reports on that fixed window.
+    result = compute_budget_status(db, budget, as_of=date(2026, 10, 9))
+
+    assert result["spent_amount"] == 80

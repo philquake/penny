@@ -73,16 +73,20 @@ def delete_budget(
 def compute_budget_status(
     db: Session,
     budget: Budget,
+    as_of: date | None = None,
 ) -> dict:
-    
+    # Rolling periods report on the window containing `as_of` (default:
+    # today); custom budgets keep their fixed start/end.
+    window_start, window_end = current_window(budget, as_of)
+
     statement = select(
         func.coalesce(func.sum(Transaction.amount), 0)
     ).where(
         Transaction.user_id == budget.user_id,
         Transaction.category_id == budget.category_id,
         Transaction.type == TransactionType.EXPENSE,
-        Transaction.transaction_date >= budget.period_start,
-        Transaction.transaction_date <= budget.period_end,
+        Transaction.transaction_date >= window_start,
+        Transaction.transaction_date <= window_end,
     )
 
     spent = db.scalar(statement) or 0
@@ -100,11 +104,11 @@ def compute_budget_status(
         * Decimal(budget.alert_threshold_percent)
         / Decimal("100")
     )
-    
+
     threshold_crossed = (
         budget.alert_threshold_percent > 0 and spent >= threshold_amount
     )
-    
+
     if percentage_used >= Decimal("100"):
         budget_status = "exceeded"
     elif threshold_crossed:

@@ -5,10 +5,15 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.crud.categories import seed_default_categories
 from app.db import database
-from app.db.database import Base, get_db
 from app.main import app
+
+import calendar
+from datetime import date
+
+today = date.today()
+month_start = today.replace(day=1)
+month_end = today.replace(day=calendar.monthrange(today.year, today.month)[1])
 
 TEST_DB = Path(__file__).parent / "test_smoke.db"
 if TEST_DB.exists():
@@ -137,7 +142,7 @@ def test_smoke_workflow():
 
         transaction = {
             "amount": 50.00,
-            "transaction_date": "2026-08-29",
+            "transaction_date": today.isoformat(),
             "category_id": food_category["id"],
             "description": "Smoke test grocery purchase",
             "type": "expense",
@@ -196,8 +201,8 @@ def test_smoke_workflow():
             "category_id": food_category["id"],
             "amount": 100.00,
             "period": "monthly",
-            "period_start": "2026-08-01",
-            "period_end": "2026-08-31",
+            "period_start": month_start.isoformat(),
+            "period_end": month_end.isoformat(),
             "alert_threshold_percent": "50.00",
         }
 

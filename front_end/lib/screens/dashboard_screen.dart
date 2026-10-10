@@ -329,6 +329,12 @@ class _ExpensesListState extends State<_ExpensesList> {
   final _searchController = TextEditingController();
   _FlowFilter _filter = _FlowFilter.all;
 
+  static const _monthAbbr = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  static const _weekdayAbbr = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -357,6 +363,37 @@ class _ExpensesListState extends State<_ExpensesList> {
     }).toList();
   }
 
+  // UTC midnight keys avoid DST making "yesterday" 23 hours long.
+  DateTime _dayKey(DateTime d) => DateTime.utc(d.year, d.month, d.day);
+
+  /// Filtered transactions grouped by calendar day, newest day first.
+  Map<DateTime, List<Transaction>> get _grouped {
+    final sorted = [..._filtered]
+      ..sort((a, b) {
+        final byDate = b.transactionDate.compareTo(a.transactionDate);
+        return byDate != 0 ? byDate : b.createdAt.compareTo(a.createdAt);
+      });
+    final groups = <DateTime, List<Transaction>>{};
+    for (final t in sorted) {
+      groups.putIfAbsent(_dayKey(t.transactionDate), () => []).add(t);
+    }
+    return groups;
+  }
+
+  String _dayLabel(DateTime day) {
+    final today = _dayKey(DateTime.now());
+    final diff = today.difference(day).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Yesterday';
+    final base =
+        '${_weekdayAbbr[day.weekday - 1]}, ${_monthAbbr[day.month - 1]} ${day.day}';
+    return day.year == today.year ? base : '$base, ${day.year}';
+  }
+
+  double _daySpent(List<Transaction> items) => items
+      .where((t) => t.type == TransactionType.expense)
+      .fold(0.0, (sum, t) => sum + (double.tryParse(t.amount) ?? 0));
+
   Widget _label(BuildContext context, String text) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),
     child: Text(text, style: context.text.bodyMedium?.copyWith(fontSize: 13)),
@@ -364,7 +401,8 @@ class _ExpensesListState extends State<_ExpensesList> {
 
   @override
   Widget build(BuildContext context) {
-    final rows = _filtered;
+    final groups = _grouped;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -403,8 +441,8 @@ class _ExpensesListState extends State<_ExpensesList> {
           onSelectionChanged: (selection) =>
               setState(() => _filter = selection.first),
         ),
-        const SizedBox(height: 16),
-        if (rows.isEmpty)
+        const SizedBox(height: 8),
+        if (groups.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
             child: Center(
@@ -417,34 +455,57 @@ class _ExpensesListState extends State<_ExpensesList> {
             ),
           )
         else
-          Container(
-            decoration: BoxDecoration(
-              color: context.colors.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: context.colors.outlineVariant),
-            ),
-            child: Column(
-              children: [
-                for (int i = 0; i < rows.length; i++) ...[
-                  Builder(
-                    builder: (context) {
-                      final category = _categoryFor(rows[i].categoryId);
-                      if (category == null) return const SizedBox.shrink();
-                      return TransactionRow(
-                        transaction: rows[i],
-                        category: category,
-                        onTap: widget.onTransactionTap == null
-                            ? null
-                            : () => widget.onTransactionTap!(rows[i]),
-                      );
-                    },
+          for (final entry in groups.entries) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _dayLabel(entry.key),
+                    style: context.text.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: context.colors.onSurface,
+                    ),
                   ),
-                  if (i != rows.length - 1)
-                    const Divider(height: 1, indent: 56),
+                  if (_daySpent(entry.value) > 0)
+                    Text(
+                      '-\$${_daySpent(entry.value).toStringAsFixed(2)}',
+                      style: context.text.bodySmall,
+                    ),
                 ],
-              ],
+              ),
             ),
-          ),
+            Container(
+              decoration: BoxDecoration(
+                color: context.colors.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: context.colors.outlineVariant),
+              ),
+              child: Column(
+                children: [
+                  for (int i = 0; i < entry.value.length; i++) ...[
+                    Builder(
+                      builder: (context) {
+                        final t = entry.value[i];
+                        final category = _categoryFor(t.categoryId);
+                        if (category == null) return const SizedBox.shrink();
+                        return TransactionRow(
+                          transaction: t,
+                          category: category,
+                          onTap: widget.onTransactionTap == null
+                              ? null
+                              : () => widget.onTransactionTap!(t),
+                        );
+                      },
+                    ),
+                    if (i != entry.value.length - 1)
+                      const Divider(height: 1, indent: 56),
+                  ],
+                ],
+              ),
+            ),
+          ],
       ],
     );
   }
