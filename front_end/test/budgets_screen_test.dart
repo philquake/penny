@@ -45,7 +45,7 @@ void main() {
       home: BudgetsScreen(
         entries: entries,
         expenseCategories: const [],
-        onCreate: (_) {},
+        onCreate: (_) async {},
         onDelete: (_) {},
       ),
     );

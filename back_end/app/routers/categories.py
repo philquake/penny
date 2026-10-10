@@ -42,6 +42,8 @@ def create_new_category(
         name=category_data.name,
         user_id=current_user.id,
         type=category_data.type,
+        icon=category_data.icon,
+        color=category_data.color,
     )
 
 

@@ -21,6 +21,10 @@ DEFAULT_INCOME_CATEGORIES = [
     "Income",
 ]
 
+DEFAULT_SAVINGS_CATEGORIES = [
+    "Savings",
+]
+
 def list_categories(db: Session, user_id: int,) -> list[Category]:
     
     statement = (
@@ -42,6 +46,7 @@ def create_category(
     type: TransactionType,
     user_id: int | None = None,
     icon: str | None = None,
+    color: str | None = None,
     is_default: bool = False,
 ) -> Category:
 
@@ -50,6 +55,7 @@ def create_category(
         user_id=user_id,
         type=type,
         icon=icon,
+        color=color,
         is_default=is_default,
     )
 
@@ -128,6 +134,19 @@ def seed_default_categories(db: Session) -> None:
         else:
             category.type = TransactionType.INCOME
             category.is_default = True
+            
+    for name in DEFAULT_SAVINGS_CATEGORIES:
+        category = db.scalar(
+            select(Category).where(Category.name == name, Category.user_id.is_(None))
+        )
+        if category is None:
+            db.add(Category(name=name, user_id=None, type=TransactionType.SAVINGS,
+                            icon="savings", is_default=True))
+        else:
+            category.type = TransactionType.SAVINGS
+            category.is_default = True
+
+    db.commit()
 
     db.commit()
     

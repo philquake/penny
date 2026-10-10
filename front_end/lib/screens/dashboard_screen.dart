@@ -48,9 +48,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double _amount(Transaction t) => double.tryParse(t.amount) ?? 0;
 
   double get _totalBalance => widget.transactions.fold(0.0, (sum, t) {
-    final a = _amount(t);
-    return sum + (t.type == TransactionType.expense ? -a : a);
-  });
+  final a = _amount(t);
+  switch (t.type) {
+    case TransactionType.income:
+      return sum + a;
+    case TransactionType.expense:
+    case TransactionType.savings:
+      return sum - a;
+    default:
+      return sum; 
+  }
+});
 
   bool _isThisMonth(DateTime d, DateTime now) =>
       d.year == now.year && d.month == now.month;

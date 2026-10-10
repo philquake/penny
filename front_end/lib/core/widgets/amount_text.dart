@@ -8,6 +8,7 @@ class AmountText extends StatelessWidget {
   final FontWeight weight;
   final bool colorBySign;
   final String currencySymbol;
+  final Color? color;
 
   const AmountText(
     this.value, {
@@ -16,6 +17,7 @@ class AmountText extends StatelessWidget {
     this.weight = FontWeight.w600,
     this.colorBySign = true,
     this.currencySymbol = r'$',
+    this.color,
   });
 
   @override
@@ -24,19 +26,21 @@ class AmountText extends StatelessWidget {
     final isNegative = amount < 0;
     final display =
         '${isNegative ? '-' : ''}$currencySymbol${amount.abs().toStringAsFixed(2)}';
-    final color = colorBySign
-        ? (isNegative ? context.finance.expense : context.finance.income)
-        : context.colors.onSurface;
+    final resolved =
+        color ??
+        (colorBySign
+            ? (isNegative ? context.finance.expense : context.finance.income)
+            : context.colors.onSurface);
 
     return Text(
       display,
       style:
           context.text.titleMedium?.copyWith(
-            color: color,
+            color: resolved,
             fontSize: size,
             fontWeight: weight,
           ) ??
-          TextStyle(fontSize: size, fontWeight: weight, color: color),
+          TextStyle(fontSize: size, fontWeight: weight, color: resolved),
     );
   }
 }

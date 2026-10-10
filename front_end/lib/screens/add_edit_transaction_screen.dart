@@ -63,8 +63,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     if (existing != null) {
       final match = widget.categories.where((c) => c.id == existing.categoryId);
       _category = match.isNotEmpty ? match.first : null;
-    } else if (_type == TransactionType.income) {
-      final options = widget.categories.where((c) => c.type == _type).toList();
+    } else if (_type == TransactionType.income || _type == TransactionType.savings) {      final options = widget.categories.where((c) => c.type == _type).toList();
       final defaults = options.where((category) => category.isDefault);
       _category = defaults.isNotEmpty
           ? defaults.first
@@ -90,8 +89,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   void _handleTypeChanged(TransactionType type) {
     setState(() {
       _type = type;
-      if (type == TransactionType.income) {
-        // Auto-select the seeded default income category.
+      if (type == TransactionType.income || type == TransactionType.savings) {        // Auto-select the seeded default income category.
         final options = widget.categories.where((c) => c.type == type).toList();
         final defaults = options.where((category) => category.isDefault);
         _category = defaults.isNotEmpty
@@ -504,6 +502,7 @@ class _TypeToggle extends StatelessWidget {
       segments: const [
         ButtonSegment(value: TransactionType.expense, label: Text('Expense')),
         ButtonSegment(value: TransactionType.income, label: Text('Income')),
+        ButtonSegment(value: TransactionType.savings, label: Text('Savings')),
       ],
       selected: {type},
       onSelectionChanged: (selection) => onChanged(selection.first),
@@ -519,9 +518,11 @@ class _AmountField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = type == TransactionType.income
-        ? context.finance.income
-        : context.colors.error;
+    final color = switch (type)  {
+        TransactionType.income => context.finance.income,
+        TransactionType.savings => context.finance.savings,
+        _ => context.colors.error,
+    };
     return IntrinsicWidth(
       child: TextField(
         controller: controller,

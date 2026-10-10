@@ -36,6 +36,8 @@ IconData categoryIcon(String? iconKey) {
       return Icons.directions_car_outlined;
     case 'repeat':
       return Icons.repeat_rounded;
+    case 'savings':
+      return Icons.savings_outlined;
     default:
       return Icons.circle_outlined;
   }
@@ -67,9 +69,10 @@ class TransactionRow extends StatelessWidget {
     // amount is always a positive Decimal-as-string from the backend;
     // sign for display comes from `type`, not the raw value.
     final magnitude = double.tryParse(transaction.amount) ?? 0;
-    final signedAmount = transaction.type == TransactionType.expense
-        ? -magnitude
-        : magnitude;
+    final isOutflow =
+        transaction.type == TransactionType.expense ||
+        transaction.type == TransactionType.savings;
+    final signedAmount = isOutflow ? -magnitude : magnitude;
 
     final title = (transaction.description?.trim().isNotEmpty ?? false)
         ? transaction.description!
@@ -112,7 +115,13 @@ class TransactionRow extends StatelessWidget {
                 ],
               ),
             ),
-            AmountText(signedAmount.toStringAsFixed(2), size: 14),
+            AmountText(
+              signedAmount.toStringAsFixed(2),
+              size: 14,
+              color: transaction.type == TransactionType.savings
+                  ? context.finance.savings
+                  : null,
+            ),
           ],
         ),
       ),

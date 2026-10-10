@@ -14,7 +14,7 @@ import '../core/theme/theme_x.dart';
 class BudgetsScreen extends StatefulWidget {
   final List<BudgetEntry> entries;
   final List<Category> expenseCategories;
-  final void Function(BudgetCreate) onCreate;
+  final Future<void> Function(BudgetCreate) onCreate;
   final Future<void> Function(int id, BudgetUpdate data)? onUpdate;
   final void Function(int id) onDelete;
 
@@ -85,36 +85,52 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           _AddBudgetSheet(categories: widget.expenseCategories),
     );
 
-    if (created != null) {
-      widget.onCreate(created);
-      // next fetch; show it fresh (0% used) until then.
-      setState(() {
-        _entries.add(
-          BudgetEntry(
-            Budget(
-              id: -_entries.length - 1,
-              userId: 1,
-              categoryId: created.categoryId,
-              amount: created.amount,
-              period: created.period,
-              periodStart: created.periodStart,
-              periodEnd: created.periodEnd,
-              alertThresholdPercent: created.alertThresholdPercent,
-            ),
-            BudgetStatus(
-              budgetId: -_entries.length - 1,
-              spentAmount: '0.00',
-              remainingAmount: created.amount,
-              percentageUsed: '0',
-              status: 'normal',
-              thresholdCrossed: false,
-            ),
-            widget.expenseCategories.firstWhere(
-              (c) => c.id == created.categoryId,
-            ),
+    if (created == null) return;
+    final tempId = -_entries.length - 1;
+    setState(() {
+      _entries.add(
+        BudgetEntry(
+          Budget(
+            id: tempId,
+            userId: 1,
+            categoryId: created.categoryId,
+            amount: created.amount,
+            period: created.period,
+            periodStart: created.periodStart,
+            periodEnd: created.periodEnd,
+            alertThresholdPercent: created.alertThresholdPercent,
           ),
-        );
-      });
+          BudgetStatus(
+            budgetId: tempId,
+            spentAmount: '0.00',
+            remainingAmount: created.amount,
+            percentageUsed: '0',
+            status: 'normal',
+            thresholdCrossed: false,
+          ),
+          widget.expenseCategories.firstWhere((c) => c.id == created.categoryId),
+        ),
+      );
+    });
+
+    try {
+      await widget.onCreate(created);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _entries.removeWhere((e) => e.budget.id == tempId));
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Can\'t create budget'),
+          content: const Text('Something went wrong. Please try again.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     }
   }
 

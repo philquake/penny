@@ -311,6 +311,8 @@ class _SettingsTab extends ConsumerWidget {
                   ref.read(categoriesProvider.notifier).create(data),
               onDelete: (id) =>
                   ref.read(categoriesProvider.notifier).delete(id),
+              onUpdate: (id, data) =>
+                  ref.read(categoriesProvider.notifier).update(id, data),
             ),
           ),
         );

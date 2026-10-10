@@ -33,9 +33,10 @@ class CategoriesController extends StateNotifier<AsyncValue<List<Category>>> {
     state = await AsyncValue.guard(() => _repo.list());
   }
 
-  Future<void> create(CategoryCreate data) async {
+  Future<Category> create(CategoryCreate data) async {
     final created = await _repo.create(data);
     state = state.whenData((list) => [...list, created]);
+    return created;
   }
 
   Future<void> delete(int id) async {
@@ -156,12 +157,12 @@ class BudgetsController extends StateNotifier<AsyncValue<List<BudgetEntry>>> {
 
   Future<void> create(BudgetCreate data) async {
     await _repo.create(data);
-    await refresh();
+    await refresh(silent: true);
   }
 
   Future<void> delete(int id) async {
     await _repo.delete(id);
-    await refresh();
+    await refresh(silent: true);
   }
 
   Future<void> update(int id, BudgetUpdate data) async {

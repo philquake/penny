@@ -16,7 +16,7 @@ import '../core/theme/theme_x.dart';
 /// household member's own custom categories can be.
 class CategoriesScreen extends StatefulWidget {
   final List<Category> categories;
-  final void Function(CategoryCreate) onCreate;
+  final Future<Category> Function(CategoryCreate) onCreate;
   final Future<void> Function(int id) onDelete;
   final Future<void> Function(int id, CategoryUpdate data)? onUpdate;
 
@@ -156,27 +156,47 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => _AddCategorySheet(),
     );
+    if (created == null) return;
 
-    if (created != null) {
-      // Optimistic local id — the real id comes back from POST /categories;
-      // caller should reconcile this with the server response.
-      final tempId =
-          (_categories.map((c) => c.id).fold<int>(0, (a, b) => a > b ? a : b)) +
-          1;
+    // Negative temp id so it can never collide with a real server id.
+    final tempId = -DateTime.now().microsecondsSinceEpoch;
+    setState(() {
+      _categories.add(
+        Category(
+          id: tempId,
+          userId: 1,
+          name: created.name,
+          type: created.type,
+          icon: created.icon,
+          isDefault: false,
+          color: created.color,
+        ),
+      );
+    });
+
+    try {
+      final saved = await widget.onCreate(created);
+      if (!mounted) return;
       setState(() {
-        _categories.add(
-          Category(
-            id: tempId,
-            userId: 1,
-            name: created.name,
-            type: created.type,
-            icon: created.icon,
-            isDefault: false,
-            color: created.color,
-          ),
-        );
+        final i = _categories.indexWhere((c) => c.id == tempId);
+        if (i != -1) _categories[i] = saved; // swap in the real id
       });
-      widget.onCreate(created);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _categories.removeWhere((c) => c.id == tempId));
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Can\'t create category'),
+          content: Text(_errorMessage(error)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -217,6 +237,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   _CategorySection(
                     title: 'Income',
                     categories: _byType(TransactionType.income),
+                    onDelete: _confirmDelete,
+                    onColorTap: widget.onUpdate == null ? null : _changeColor,
+                  ),
+                  const SizedBox(height: 28),
+                  _CategorySection(
+                    title: 'Savings',
+                    categories: _byType(TransactionType.savings),
                     onDelete: _confirmDelete,
                     onColorTap: widget.onUpdate == null ? null : _changeColor,
                   ),
@@ -361,6 +388,7 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
     'car',
     'repeat',
     'arrow_down_left',
+    'savings',
   ];
 
   @override
@@ -475,7 +503,11 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
                       value: TransactionType.income,
                       label: _segmentLabel(context, 'Income'),
                     ),
-                  ],
+                    ButtonSegment(
+                      value: TransactionType.savings,
+                      label: _segmentLabel(context, 'Savings'),
+                    ),
+                                    ],
                   selected: {_type},
                   onSelectionChanged: (selection) =>
                       setState(() => _type = selection.first),
