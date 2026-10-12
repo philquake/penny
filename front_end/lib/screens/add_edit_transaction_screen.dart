@@ -3,6 +3,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:image_picker/image_picker.dart';
 
 import '../models/category.dart';
+import '../models/debt.dart';
 import '../models/transaction_type.dart';
 import '../models/transactions.dart';
 import '../services/receipt_parser.dart';
@@ -16,8 +17,12 @@ import '../widgets/transaction_row.dart' show categoryIcon;
 /// new one. [categories] should be the full list from GET /categories —
 /// this screen filters it by the selected [TransactionType] itself, since
 /// a category's type and a transaction's type are expected to match.
+///
+/// Picking the default "Debt Payment" expense category reveals a "Pay debt"
+/// row; the backend turns that into a linked payment on the chosen debt.
 class AddEditTransactionScreen extends StatefulWidget {
   final List<Category> categories;
+  final List<Debt> debts;
   final Transaction? existing;
   final Future<void> Function(TransactionCreate) onCreate;
   final Future<void> Function(int id, TransactionUpdate) onUpdate;
@@ -28,6 +33,7 @@ class AddEditTransactionScreen extends StatefulWidget {
     required this.categories,
     required this.onCreate,
     required this.onUpdate,
+    this.debts = const [],
     this.existing,
     this.onDelete,
   });
@@ -40,14 +46,20 @@ class AddEditTransactionScreen extends StatefulWidget {
 }
 
 class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
+  static const _debtPaymentCategoryName = 'Debt Payment';
+
   late TransactionType _type;
   late final TextEditingController _amountController;
   late final TextEditingController _descriptionController;
   late DateTime _date;
   Category? _category;
+  Debt? _debt;
   bool _isSaving = false;
   bool _isScanning = false;
   final ImagePicker _picker = ImagePicker();
+
+  bool _autoSelectsDefault(TransactionType type) =>
+      type == TransactionType.income || type == TransactionType.savings;
 
   @override
   void initState() {
@@ -63,11 +75,13 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     if (existing != null) {
       final match = widget.categories.where((c) => c.id == existing.categoryId);
       _category = match.isNotEmpty ? match.first : null;
-    } else if (_type == TransactionType.income || _type == TransactionType.savings) {      final options = widget.categories.where((c) => c.type == _type).toList();
-      final defaults = options.where((category) => category.isDefault);
-      _category = defaults.isNotEmpty
-          ? defaults.first
-          : (options.isNotEmpty ? options.first : null);
+
+      if (existing.debtId != null) {
+        final debtMatch = widget.debts.where((d) => d.id == existing.debtId);
+        _debt = debtMatch.isNotEmpty ? debtMatch.first : null;
+      }
+    } else if (_autoSelectsDefault(_type)) {
+      _category = _defaultCategoryFor(_type);
     }
   }
 
@@ -78,27 +92,38 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     super.dispose();
   }
 
+  Category? _defaultCategoryFor(TransactionType type) {
+    final options = widget.categories.where((c) => c.type == type).toList();
+    final defaults = options.where((category) => category.isDefault);
+    if (defaults.isNotEmpty) return defaults.first;
+    return options.isNotEmpty ? options.first : null;
+  }
+
   List<Category> get _categoriesForType =>
       widget.categories.where((c) => c.type == _type).toList();
 
   double? get _parsedAmount => double.tryParse(_amountController.text.trim());
 
+  /// True when the selected category is the seeded "Debt Payment" expense
+  /// category. Mirrors the backend's is_debt_payment_category check.
+  bool get _isDebtPayment =>
+      _type == TransactionType.expense &&
+      _category != null &&
+      _category!.isDefault &&
+      _category!.name == _debtPaymentCategoryName;
+
   bool get _canSave =>
-      _category != null && (_parsedAmount != null && _parsedAmount! > 0);
+      _category != null &&
+      (_parsedAmount != null && _parsedAmount! > 0) &&
+      (!_isDebtPayment || _debt != null);
 
   void _handleTypeChanged(TransactionType type) {
     setState(() {
       _type = type;
-      if (type == TransactionType.income || type == TransactionType.savings) {        // Auto-select the seeded default income category.
-        final options = widget.categories.where((c) => c.type == type).toList();
-        final defaults = options.where((category) => category.isDefault);
-        _category = defaults.isNotEmpty
-            ? defaults.first
-            : (options.isNotEmpty ? options.first : null);
-      } else {
-        // Expense always starts empty — no default guess.
-        _category = null;
-      }
+      _debt = null;
+      // Income and savings auto-select their seeded default category;
+      // expense always starts empty — no default guess.
+      _category = _autoSelectsDefault(type) ? _defaultCategoryFor(type) : null;
     });
   }
 
@@ -246,7 +271,56 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
       ),
     );
 
-    if (picked != null) setState(() => _category = picked);
+    if (picked != null) {
+      setState(() {
+        _category = picked;
+        // Leaving the Debt Payment category drops the debt selection.
+        if (!_isDebtPayment) _debt = null;
+      });
+    }
+  }
+
+  Future<void> _pickDebt() async {
+    final picked = await showModalBottomSheet<Debt>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Text('Pay which debt?', style: context.text.titleMedium),
+            ),
+            for (final debt in widget.debts)
+              ListTile(
+                leading: Icon(
+                  debt.kind == DebtKind.creditCard
+                      ? Icons.credit_card_rounded
+                      : Icons.account_balance_rounded,
+                  size: 18,
+                  color: context.colors.primary,
+                ),
+                title: Text(debt.name, style: context.text.bodyMedium),
+                subtitle: Text(
+                  '\$${debt.balance} owed · ${debt.apr}% APR',
+                  style: context.text.bodySmall,
+                ),
+                trailing: _debt?.id == debt.id
+                    ? Icon(
+                        Icons.check_rounded,
+                        size: 16,
+                        color: context.colors.primary,
+                      )
+                    : null,
+                onTap: () => Navigator.of(context).pop(debt),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    if (picked != null) setState(() => _debt = picked);
   }
 
   Future<void> _pickDate() async {
@@ -264,6 +338,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   Future<void> _handleSave() async {
     if (!_canSave || _isSaving) return;
     final amountString = _parsedAmount!.toStringAsFixed(2);
+    final debtId = _isDebtPayment ? _debt!.id : null;
 
     setState(() => _isSaving = true);
 
@@ -277,6 +352,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
             type: _type,
             description: _descriptionController.text.trim(),
             transactionDate: _date,
+            debtId: debtId,
           ),
         );
       } else {
@@ -287,6 +363,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
             type: _type,
             description: _descriptionController.text.trim(),
             transactionDate: _date,
+            debtId: debtId,
           ),
         );
       }
@@ -315,7 +392,12 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete transaction?'),
-        content: const Text('This can\'t be undone.'),
+        content: Text(
+          widget.existing?.debtId != null
+              ? 'This also removes the payment from the debt\'s history. '
+                  'This can\'t be undone.'
+              : 'This can\'t be undone.',
+        ),
         actions: [
           TextButton(
             child: const Text('Cancel'),
@@ -416,6 +498,26 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                       ),
               ),
               const Divider(),
+              if (_isDebtPayment) ...[
+                _FieldRow(
+                  label: 'Pay debt',
+                  onTap: widget.debts.isEmpty ? null : _pickDebt,
+                  child: _debt != null
+                      ? Text(
+                          '${_debt!.name} · \$${_debt!.balance} owed',
+                          style: context.text.bodyMedium,
+                        )
+                      : Text(
+                          widget.debts.isEmpty
+                              ? 'No debts yet. Add one in the Debts tab.'
+                              : 'Select debt',
+                          style: context.text.bodyMedium?.copyWith(
+                            color: context.colors.outline,
+                          ),
+                        ),
+                ),
+                const Divider(),
+              ],
               _FieldRow(
                 label: 'Date',
                 onTap: _pickDate,
@@ -518,10 +620,10 @@ class _AmountField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = switch (type)  {
-        TransactionType.income => context.finance.income,
-        TransactionType.savings => context.finance.savings,
-        _ => context.colors.error,
+    final color = switch (type) {
+      TransactionType.income => context.finance.income,
+      TransactionType.savings => context.finance.savings,
+      _ => context.colors.error,
     };
     return IntrinsicWidth(
       child: TextField(

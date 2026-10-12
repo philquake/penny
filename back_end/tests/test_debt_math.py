@@ -4,7 +4,36 @@ from decimal import Decimal
 from app.crud.debts import accrue_interest, create_debt, get_balance
 from app.models.debts import DebtKind
 from app.services.debt_math import amortize, payoff_plan
+from app.crud.categories import create_category
+from app.crud.debts import sync_payment_entry
+from app.crud.transactions import create_transaction
+from app.models.transactions import TransactionType
 
+
+def test_linked_payment_follows_transaction(db):
+    debt = create_debt(
+        db, user_id=1, name="Visa", kind=DebtKind.CREDIT_CARD,
+        opening_balance=Decimal("1000"), apr=Decimal("0"),
+        minimum_payment=Decimal("25"), credit_limit=None,
+        due_day=None, start_date=date(2026, 8, 1),
+    )
+    cat = create_category(db, name="Debt Payment", user_id=None, type=TransactionType.EXPENSE)
+    tx = create_transaction(
+        db, user_id=1, amount=Decimal("200"), transaction_date=date(2026, 8, 10),
+        category_id=cat.id, type=TransactionType.EXPENSE, debt_id=debt.id,
+    )
+    sync_payment_entry(db, tx)
+    assert get_balance(db, debt) == Decimal("800")
+
+    tx.amount = Decimal("300")
+    db.commit()
+    sync_payment_entry(db, tx)
+    assert get_balance(db, debt) == Decimal("700")
+
+    tx.debt_id = None
+    db.commit()
+    sync_payment_entry(db, tx)
+    assert get_balance(db, debt) == Decimal("1000")
 
 def test_amortize_matches_known_loan():
     # $10,000 @ 12% APR, $888.49/mo is the standard 12-month schedule

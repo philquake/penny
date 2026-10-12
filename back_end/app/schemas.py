@@ -48,6 +48,7 @@ class TransactionCreate(BaseModel):
     type: TransactionType
     description: str | None = None
     transaction_date: date
+    debt_id: int | None = None
     
 class TransactionUpdate(BaseModel):
     category_id: int | None = None
@@ -55,6 +56,7 @@ class TransactionUpdate(BaseModel):
     type: TransactionType | None = None
     description: str | None = None
     transaction_date: date | None = None
+    debt_id: int | None = None
     
 class TransactionOut(BaseModel):
     id: int
@@ -65,6 +67,7 @@ class TransactionOut(BaseModel):
     description: str | None
     transaction_date: date
     created_at: datetime
+    debt_id: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
     
@@ -203,6 +206,7 @@ class DebtEntryOut(BaseModel):
     entry_date: date
     note: str | None
     model_config = ConfigDict(from_attributes=True)
+    debt_id: int | None = None
 
 
 class PayoffRow(BaseModel):

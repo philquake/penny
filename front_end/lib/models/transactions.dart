@@ -6,6 +6,7 @@ class TransactionCreate {
   final TransactionType type;
   final String? description;
   final DateTime transactionDate;
+  final int? debtId;
 
   const TransactionCreate({
     required this.categoryId,
@@ -13,6 +14,7 @@ class TransactionCreate {
     required this.type,
     this.description,
     required this.transactionDate,
+    this.debtId,
   });
 
   Map<String, dynamic> toJson() {
@@ -22,6 +24,7 @@ class TransactionCreate {
       'type': type.value,
       'description': description,
       'transaction_date': _dateOnly(transactionDate),
+      'debt_id': debtId,
     };
   }
 
@@ -36,6 +39,7 @@ class TransactionUpdate {
   final TransactionType? type;
   final String? description;
   final DateTime? transactionDate;
+  final int? debtId;
 
   const TransactionUpdate({
     this.categoryId,
@@ -43,6 +47,7 @@ class TransactionUpdate {
     this.type,
     this.description,
     this.transactionDate,
+    this.debtId,
   });
 
   Map<String, dynamic> toJson() {
@@ -70,6 +75,7 @@ class Transaction {
   final String? description;
   final DateTime transactionDate;
   final DateTime createdAt;
+  final int? debtId;
 
   const Transaction({
     required this.id,
@@ -80,6 +86,7 @@ class Transaction {
     required this.description,
     required this.transactionDate,
     required this.createdAt,
+    this.debtId,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {

@@ -6,6 +6,7 @@ import 'models/category.dart';
 import 'models/transaction_type.dart';
 import 'models/transactions.dart';
 import 'models/budget_period.dart';
+import 'models/debt.dart';
 import 'providers/data_providers.dart';
 import 'providers/session.dart';
 import 'screens/add_edit_transaction_screen.dart';
@@ -169,11 +170,13 @@ Future<void> _openAddEditTransaction(
 }) async {
   final categoriesState = ref.read(categoriesProvider);
   final categories = categoriesState.asData?.value ?? const <Category>[];
+  final debts = ref.read(debtsProvider).valueOrNull ?? const <Debt>[];
 
   await Navigator.of(context).push(
     MaterialPageRoute(
       builder: (context) => AddEditTransactionScreen(
         categories: categories,
+        debts: debts,
         existing: existing,
         onCreate: (data) =>
             ref.read(transactionsProvider.notifier).create(data),

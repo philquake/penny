@@ -5,6 +5,8 @@ from app.models.budgets import Budget
 from app.models.categories import Category
 from app.models.transactions import Transaction, TransactionType
 
+DEBT_PAYMENT_CATEGORY = "Debt Payment"
+
 DEFAULT_CATEGORIES = [
     "Food",
     "Transportation",
@@ -14,6 +16,7 @@ DEFAULT_CATEGORIES = [
     "Health",
     "Education",
     "Other",
+    DEBT_PAYMENT_CATEGORY,
 ]
 
 # Seeded with TransactionType.INCOME instead of EXPENSE.
@@ -156,3 +159,6 @@ def update_category(db: Session, category: Category, **fields) -> Category:
     db.commit()
     db.refresh(category)
     return category
+
+def is_debt_payment_category(category: Category) -> bool:
+    return category.user_id is None and category.name == DEBT_PAYMENT_CATEGORY

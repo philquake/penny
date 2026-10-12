@@ -15,8 +15,8 @@ def create_transaction(
     category_id: int,
     type: TransactionType,
     description: str | None = None,
+    debt_id: int | None = None,
 ) -> Transaction:
-    
     transaction = Transaction(
         user_id=user_id,
         amount=amount,
@@ -24,7 +24,9 @@ def create_transaction(
         category_id=category_id,
         type=type,
         description=description,
+        debt_id=debt_id,
     )
+
 
     db.add(transaction)
     db.commit()
@@ -114,3 +116,4 @@ def delete_transaction(
 ) -> None:
     db.delete(transaction)
     db.commit()
+    

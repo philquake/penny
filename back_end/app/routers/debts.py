@@ -43,7 +43,7 @@ def create_new_debt(data: DebtCreate, db: Session = Depends(get_db),
 
 @router.get("", response_model=list[DebtOut])
 def get_all_debts(db: Session = Depends(get_db),
-                  current_user: User = Depends(get_current_user)):
+            current_user: User = Depends(get_current_user)):
     result = []
     for debt in crud.list_debts(db, current_user.id):
         crud.accrue_interest(db, debt)
@@ -68,7 +68,7 @@ def get_payoff_plan(
         crud.accrue_interest(db, debt)
         s = crud.summarize(db, debt)
         rows.append({"id": s["id"], "name": s["name"], "balance": s["balance"],
-                     "apr": s["apr"], "minimum_payment": s["minimum_payment"]})
+                    "apr": s["apr"], "minimum_payment": s["minimum_payment"]})
     return payoff_plan(rows, extra, strategy, start=date.today())
 
 
@@ -80,7 +80,7 @@ def get_single_debt(debt_id: int, db: Session = Depends(get_db),
 
 @router.put("/{debt_id}", response_model=DebtOut)
 def update_existing_debt(debt_id: int, data: DebtUpdate, db: Session = Depends(get_db),
-                         current_user: User = Depends(get_current_user)):
+                        current_user: User = Depends(get_current_user)):
     debt = _load(db, current_user, debt_id)
     fields = data.model_dump(exclude_unset=True)
     for required in ("name", "apr", "minimum_payment", "is_active"):
@@ -103,20 +103,22 @@ def get_entries(debt_id: int, db: Session = Depends(get_db),
 
 
 @router.post("/{debt_id}/entries", response_model=DebtEntryOut,
-             status_code=status.HTTP_201_CREATED)
+            status_code=status.HTTP_201_CREATED)
 def create_entry(debt_id: int, data: DebtEntryCreate, db: Session = Depends(get_db),
-                 current_user: User = Depends(get_current_user)):
+            current_user: User = Depends(get_current_user)):
     debt = _load(db, current_user, debt_id)
     return crud.add_entry(db, debt, **data.model_dump())
 
 
 @router.delete("/{debt_id}/entries/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
 def remove_entry(debt_id: int, entry_id: int, db: Session = Depends(get_db),
-                 current_user: User = Depends(get_current_user)):
+                current_user: User = Depends(get_current_user)):
     debt = _load(db, current_user, debt_id)
     entry = crud.get_entry(db, debt.id, entry_id)
     if not entry:
         raise HTTPException(404, "Entry not found")
+    if entry.transaction_id is not None:
+        raise HTTPException(409, "This payment comes from a transaction. Edit or delete that transaction instead.")
     crud.delete_entry(db, entry)
 
 

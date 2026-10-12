@@ -81,6 +81,7 @@ class TransactionsController
     await Future.wait([
       refresh(silent: true),
       _ref.read(budgetsProvider.notifier).refresh(silent: true),
+      _ref.read(debtsProvider.notifier).refresh(silent: true),
     ]);
   }
 

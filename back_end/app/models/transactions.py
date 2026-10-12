@@ -67,6 +67,11 @@ class Transaction(Base):
         nullable=False,
     )
     
+    debt_id: Mapped[int | None] = mapped_column(
+        ForeignKey("debts.id"),
+        nullable=True,
+    )
+    
     #Db can use the index rather than scanning every transaction
     __table_args__ = (
         Index(

@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.models.debts import Debt, DebtEntry, DebtKind, EntryType
 from app.services.debt_math import add_months, money
+from sqlalchemy import func, select, update
+from app.models.transactions import Transaction
 
 _SIGN = {
     EntryType.CHARGE: 1,
@@ -73,10 +75,18 @@ def get_entry(db: Session, debt_id: int, entry_id: int) -> DebtEntry | None:
     )
 
 
-def delete_entry(db: Session, entry: DebtEntry) -> None:
-    db.delete(entry)
+def delete_debt(db: Session, debt: Debt) -> None:
+    db.execute(update(Transaction).where(Transaction.debt_id == debt.id).values(debt_id=None))
+    for entry in list_entries(db, debt.id):
+        db.delete(entry)
+    db.delete(debt)
     db.commit()
 
+def delete_payment_entry(db: Session, transaction_id: int) -> None:
+    entry = db.scalar(select(DebtEntry).where(DebtEntry.transaction_id == transaction_id))
+    if entry:
+        db.delete(entry)
+        db.commit()
 
 def get_balance(db: Session, debt: Debt, upto: date | None = None) -> Decimal:
     stmt = (
@@ -92,7 +102,25 @@ def get_balance(db: Session, debt: Debt, upto: date | None = None) -> Decimal:
         total += _SIGN[entry_type] * Decimal(str(amount))
     return total
 
+def sync_payment_entry(db: Session, tx: Transaction) -> None:
+    """Keep the ledger payment linked to `tx` matching the transaction."""
+    entry = db.scalar(select(DebtEntry).where(DebtEntry.transaction_id == tx.id))
 
+    if tx.debt_id is None:
+        if entry:
+            db.delete(entry)
+            db.commit()
+        return
+
+    if entry is None:
+        entry = DebtEntry(debt_id=tx.debt_id, type=EntryType.PAYMENT, transaction_id=tx.id)
+        db.add(entry)
+    entry.debt_id = tx.debt_id
+    entry.amount = tx.amount
+    entry.entry_date = tx.transaction_date
+    entry.note = tx.description or "Payment"
+    db.commit()
+    
 # ---- interest ---------------------------------------------------------
 
 def _next_boundary(start: date, after: date) -> date:
