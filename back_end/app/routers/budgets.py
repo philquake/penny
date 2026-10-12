@@ -105,15 +105,19 @@ def _validate_category(db, user, category_id):
         raise HTTPException(422, "Budgets can only target expense categories")
 
 @router.put("/{budget_id}", response_model=BudgetOut)
-def update_existing_budget(budget_id: int, data: BudgetUpdate,
-                            db: Session = Depends(get_db),
-                            current_user: User = Depends(get_current_user)):
+def update_existing_budget(
+    budget_id: int,
+    data: BudgetUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     budget = get_budget(db, budget_id=budget_id, user_id=current_user.id)
     if not budget:
         raise HTTPException(404, "Budget not found")
 
     fields = data.model_dump(exclude_unset=True)
-    for required in ("amount", "period", "period_start", "alert_threshold_percent", "category_id"):
+    for required in ("amount", "period", "period_start",
+                     "alert_threshold_percent", "category_id"):
         if required in fields and fields[required] is None:
             raise HTTPException(422, f"{required} cannot be null")
 
@@ -126,8 +130,4 @@ def update_existing_budget(budget_id: int, data: BudgetUpdate,
     if period == BudgetPeriod.CUSTOM and end < start:
         raise HTTPException(422, "period_end must be on or after period_start")
 
-    updated = update_budget(db, budget, **fields)
-    if updated.period != BudgetPeriod.CUSTOM:        # keep derived end consistent
-        updated.period_end = current_window(updated)[1]
-        db.commit(); db.refresh(updated)
-    return updated
+    return update_budget(db, budget, **fields)
