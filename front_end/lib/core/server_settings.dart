@@ -11,14 +11,18 @@ class ServerSettings {
   static String? normalize(String input) {
     var value = input.trim();
     if (value.isEmpty) return null;
-    if (!value.contains('://')) value = 'http://$value';
+
+    if (!value.contains('://')) {
+      // An explicit port means local plain-HTTP dev (for example 100.x.x.x:8000).
+      // Anything else is assumed to be HTTPS on 443, such as a tailscale serve URL.
+      final hasPort = RegExp(r':\d+$').hasMatch(value);
+      value = '${hasPort ? 'http' : 'https'}://$value';
+    }
 
     final uri = Uri.tryParse(value);
     if (uri == null || uri.host.isEmpty) return null;
     if (uri.scheme != 'http' && uri.scheme != 'https') return null;
 
-    // Plain HTTP servers in this project listen on 8000 by default.
-    // HTTPS endpoints (for example via `tailscale serve`) use 443.
     final port = uri.hasPort
         ? uri.port
         : (uri.scheme == 'http' ? _defaultHttpPort : null);

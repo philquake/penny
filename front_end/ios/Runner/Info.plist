@@ -66,5 +66,16 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Penny uses the camera to scan receipts and fill in transaction details.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Penny reads receipt photos you choose to fill in transaction details.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Penny connects to your Penny server on your local or Tailscale network.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 </dict>
 </plist>
