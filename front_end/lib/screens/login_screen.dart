@@ -34,9 +34,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _serverController = TextEditingController();
 
-  // TODO: remove the prefilled dev credentials before sharing a build.
-  final _usernameController = TextEditingController(text: 'test@example.com');
-  final _passwordController = TextEditingController(text: 'TestPassword123!');
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   bool _showServerField = false;
   bool _obscurePassword = true;

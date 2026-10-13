@@ -28,21 +28,6 @@ DEFAULT_SAVINGS_CATEGORIES = [
     "Savings",
 ]
 
-def list_categories(db: Session, user_id: int,) -> list[Category]:
-    
-    statement = (
-        select(Category)
-        .where(
-            or_(
-                Category.user_id.is_(None),
-                Category.user_id == user_id,
-            )
-        )
-        .order_by(Category.name)
-    )
-
-    return list(db.scalars(statement).all())
-
 def create_category(
     db: Session,
     name: str,
@@ -148,8 +133,6 @@ def seed_default_categories(db: Session) -> None:
         else:
             category.type = TransactionType.SAVINGS
             category.is_default = True
-
-    db.commit()
 
     db.commit()
     

@@ -188,8 +188,6 @@ class DebtEntryOut(BaseModel):
     entry_date: date
     note: str | None
     model_config = ConfigDict(from_attributes=True)
-    debt_id: int | None = None
-
 
 class PayoffRow(BaseModel):
     month: int

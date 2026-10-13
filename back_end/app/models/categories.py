@@ -2,7 +2,6 @@ from sqlalchemy import (
     Boolean,
     ForeignKey,
     String,
-    select,
 )
 from sqlalchemy import (
     Enum as SQLEnum,

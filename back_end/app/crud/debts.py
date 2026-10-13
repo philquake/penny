@@ -43,13 +43,6 @@ def update_debt(db: Session, debt: Debt, **fields) -> Debt:
     return debt
 
 
-def delete_debt(db: Session, debt: Debt) -> None:
-    for entry in list_entries(db, debt.id):
-        db.delete(entry)
-    db.delete(debt)
-    db.commit()
-
-
 # ---- ledger -----------------------------------------------------------
 
 def add_entry(db: Session, debt: Debt, **fields) -> DebtEntry:

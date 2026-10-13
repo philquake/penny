@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.crud.categories import seed_default_categories
 from app.db import database
-from app.db.database import Base, engine
 from app.routers import auth, budgets, categories, reports, transactions, debts
 
 

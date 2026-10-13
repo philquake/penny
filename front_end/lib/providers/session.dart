@@ -25,14 +25,6 @@ class SessionState {
       : this(status: SessionStatus.signedIn, user: user);
 }
 
-/// Owns sign-in/sign-out and the current user.
-///
-/// NOTE: because the backend has no GET /auth/me, a plain login (as
-/// opposed to signup) can't fetch full_name/created_at — the JWT only
-/// carries user_id and role (see core/security.py's create_access_token).
-/// Until that endpoint exists, a login-only session uses a stub User
-/// built from the email typed at the login screen, clearly marked below.
-/// Signup sessions get the real profile since /auth/signup returns it.
 class SessionController extends StateNotifier<SessionState> {
   final AuthRepository _authRepository;
   final TokenStorage _tokenStorage;
