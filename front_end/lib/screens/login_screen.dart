@@ -12,21 +12,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LoginScreen extends StatefulWidget {
   /// Returns an error message on failure, or null on sucess. The app root
   /// reacts to the session provider and swaps to the authenticated shell.
-  final Future<String?> Function({
+    final Future<String?> Function({
     required String email,
     required String password,
-  })
-  onSignIn;
+    required String serverAddress,
+  }) onSignIn;
 
   final String? initialError;
+  final String initialServerAddress;
 
-  const LoginScreen({super.key, required this.onSignIn, this.initialError});
+  const LoginScreen({
+    super.key,
+    required this.onSignIn,
+    this.initialError,
+    this.initialServerAddress = 'http://localhost:8000',
+  });
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _serverController = TextEditingController(text: 'tailscale-host:8000');
+  final _serverController = TextEditingController();
 
   // TODO: remove the prefilled dev credentials before sharing a build.
   final _usernameController = TextEditingController(text: 'test@example.com');
@@ -40,6 +46,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    _serverController.text = widget.initialServerAddress;
+    _showServerField = widget.initialError != null;
     _errorText = widget.initialError;
     _loadLastEmail();
   }
@@ -76,6 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final error = await widget.onSignIn(
       email: _usernameController.text.trim(),
       password: _passwordController.text,
+      serverAddress: _serverController.text.trim(),
     );
 
     if (!mounted) return;

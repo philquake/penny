@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/api_config.dart';
+import 'core/server_settings.dart';
 import 'models/category.dart';
 import 'models/transaction_type.dart';
 import 'models/transactions.dart';
@@ -26,6 +27,7 @@ import 'screens/debts_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ServerSettings.restore();
   await BudgetNotificationService.instance.initialize();
   runApp(const ProviderScope(child: PennyApp()));
 }
@@ -64,12 +66,22 @@ class _AppRoot extends ConsumerWidget {
           backgroundColor: context.colors.surface,
           body: const Center(child: CircularProgressIndicator()),
         );
-      case SessionStatus.signedOut:
+            case SessionStatus.signedOut:
         return LoginScreen(
           initialError: session.error,
-          onSignIn: ({required email, required password}) => ref
-              .read(sessionProvider.notifier)
-              .login(email: email, password: password),
+          initialServerAddress: apiClient.baseUrl,
+          onSignIn: ({
+            required email,
+            required password,
+            required serverAddress,
+          }) async {
+            final serverError = await ServerSettings.apply(serverAddress);
+            if (serverError != null) return serverError;
+
+            return ref
+                .read(sessionProvider.notifier)
+                .login(email: email, password: password);
+          },
         );
       case SessionStatus.signedIn:
         return const _AppShell();
@@ -307,13 +319,7 @@ class _SettingsTab extends ConsumerWidget {
 
     return SettingsScreen(
       user: user,
-      // NOTE: the login screen's "Server" field isn't wired to
-      // ApiConfig.baseUrl yet — ApiConfig is a static/global value, so a
-      // custom server address typed at login doesn't actually change
-      // which host requests go to. Shown here for visibility; making it
-      // dynamic is a reasonable follow-up (turn ApiConfig into an
-      // instance stored alongside the token, read at ApiClient creation).
-      serverAddress: ApiConfig.baseUrl,
+      serverAddress: apiClient.baseUrl,
       isDarkMode: Theme.of(context).brightness == Brightness.dark,
       onDarkModeChanged: (isDark) => ref
           .read(themeControllerProvider.notifier)

@@ -10,7 +10,11 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: LoginScreen(
-          onSignIn: ({required email, required password}) async => null,
+          onSignIn: ({
+            required email,
+            required password,
+            required serverAddress,
+          }) async => null,
         ),
       ),
     );

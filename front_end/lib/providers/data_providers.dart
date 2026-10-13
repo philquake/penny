@@ -2,15 +2,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/budgets_repository.dart';
 import '../data/categories_repository.dart';
+import '../data/debts_repository.dart';
 import '../data/transactions_repository.dart';
 import '../models/budget.dart';
 import '../models/budget_entry.dart';
 import '../models/category.dart';
 import '../models/debt.dart';
 import '../models/transactions.dart';
-import '../data/debts_repository.dart';
 import '../services/budget_notification_service.dart';
 import 'session.dart';
+
+/// The signed-in user's id, or null when signed out. Every data provider
+/// watches this, so a different user always gets fresh controllers instead
+/// of the previous user's cached data.
+final sessionUserIdProvider = Provider<int?>(
+  (ref) => ref.watch(sessionProvider.select((s) => s.user?.id)),
+);
 
 final categoriesRepositoryProvider = Provider(
   (ref) => CategoriesRepository(ref.watch(apiClientProvider)),
@@ -20,6 +27,9 @@ final transactionsRepositoryProvider = Provider(
 );
 final budgetsRepositoryProvider = Provider(
   (ref) => BudgetsRepository(ref.watch(apiClientProvider)),
+);
+final debtsRepositoryProvider = Provider(
+  (ref) => DebtsRepository(ref.watch(apiClientProvider)),
 );
 
 /// Categories: loaded once per session, mutated in place on create/delete
@@ -32,59 +42,69 @@ class CategoriesController extends StateNotifier<AsyncValue<List<Category>>> {
 
   Future<void> refresh() async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _repo.list());
+    final next = await AsyncValue.guard(() => _repo.list());
+    if (!mounted) return; // user changed or signed out mid-request
+    state = next;
   }
 
   Future<Category> create(CategoryCreate data) async {
     final created = await _repo.create(data);
-    state = state.whenData((list) => [...list, created]);
+    if (mounted) {
+      state = state.whenData((list) => [...list, created]);
+    }
     return created;
   }
 
   Future<void> delete(int id) async {
     await _repo.delete(id);
-    state = state.whenData((list) => list.where((c) => c.id != id).toList());
+    if (mounted) {
+      state = state.whenData((list) => list.where((c) => c.id != id).toList());
+    }
   }
 
   Future<void> update(int id, CategoryUpdate data) async {
     final updated = await _repo.update(id, data);
-    state = state.whenData(
-      (list) => [for (final c in list) c.id == id ? updated : c],
-    );
+    if (mounted) {
+      state = state.whenData(
+        (list) => [for (final c in list) c.id == id ? updated : c],
+      );
+    }
   }
 }
 
-final categoriesProvider =
-    StateNotifierProvider<CategoriesController, AsyncValue<List<Category>>>(
-      (ref) => CategoriesController(ref.watch(categoriesRepositoryProvider)),
-    );
+final categoriesProvider = StateNotifierProvider.autoDispose<
+    CategoriesController, AsyncValue<List<Category>>>((ref) {
+  ref.watch(sessionUserIdProvider);
+  return CategoriesController(ref.watch(categoriesRepositoryProvider));
+});
 
-/// Transactions: same refresh-on-mutation pattern as categories.
+/// Transactions: same refresh-on-mutation pattern as categories. A mutation
+/// also refreshes budgets and debts, since both derive from transactions.
 class TransactionsController
     extends StateNotifier<AsyncValue<List<Transaction>>> {
   final TransactionsRepository _repo;
   final Ref _ref;
   TransactionsController(this._repo, this._ref)
-    : super(const AsyncValue.loading()) {
+      : super(const AsyncValue.loading()) {
     refresh();
   }
 
   Future<void> refresh({bool silent = false}) async {
-    if (!silent) state = const AsyncValue.loading();
+    if (!silent && mounted) state = const AsyncValue.loading();
     final next = await AsyncValue.guard(() => _repo.list());
     if (!mounted) return;
-    if (silent && next.hasError) return; 
+    if (silent && next.hasError) return;
     state = next;
   }
 
   Future<void> _afterMutation() async {
+    if (!mounted) return;
     await Future.wait([
       refresh(silent: true),
       _ref.read(budgetsProvider.notifier).refresh(silent: true),
       _ref.read(debtsProvider.notifier).refresh(silent: true),
     ]);
   }
-
 
   Future<void> create(TransactionCreate data) async {
     await _repo.create(data);
@@ -98,39 +118,38 @@ class TransactionsController
 
   Future<void> delete(int id) async {
     await _repo.delete(id);
-    state = state.whenData((list) => list.where((t) => t.id != id).toList());
+    if (mounted) {
+      state = state.whenData((list) => list.where((t) => t.id != id).toList());
+    }
     await _afterMutation();
   }
 }
 
-final transactionsProvider =
-    StateNotifierProvider<
-      TransactionsController,
-      AsyncValue<List<Transaction>>
-    >(
-      (ref) => TransactionsController(
-        ref.watch(transactionsRepositoryProvider),
-        ref,
-      ),
-    );
+final transactionsProvider = StateNotifierProvider.autoDispose<
+    TransactionsController, AsyncValue<List<Transaction>>>((ref) {
+  ref.watch(sessionUserIdProvider);
+  return TransactionsController(
+    ref.watch(transactionsRepositoryProvider),
+    ref,
+  );
+});
 
-/// Budgets: fetches the list, then fetches each budget's status
-/// (GET /budgets/{id}/status) and zips them with the resolved Category
-/// into the BudgetEntry shape BudgetsScreen/DashboardScreen expect.
-///
-
+/// Budgets: fetches the list, then each budget's status
+/// (GET /budgets/{id}/status), zipped with the resolved Category into the
+/// BudgetEntry shape the screens expect.
 class BudgetsController extends StateNotifier<AsyncValue<List<BudgetEntry>>> {
   final BudgetsRepository _repo;
   final Ref _ref;
 
-  BudgetsController(this._repo, this._ref) : super(const AsyncValue.loading()) {
+  BudgetsController(this._repo, this._ref)
+      : super(const AsyncValue.loading()) {
     refresh();
   }
 
   Future<void> refresh({bool silent = false}) async {
+    if (!mounted) return;
     final categoriesState = _ref.read(categoriesProvider);
-    if (!categoriesState.hasValue)
-      return; // wait; the listener below re-triggers us
+    if (!categoriesState.hasValue) return; // the listener re-triggers us
 
     if (!silent) state = const AsyncValue.loading();
 
@@ -152,10 +171,9 @@ class BudgetsController extends StateNotifier<AsyncValue<List<BudgetEntry>>> {
       return entries;
     });
 
-    if (mounted) {
-      if (silent && next.hasError) return; // keep showing the last good data
-      state = next;
-    }
+    if (!mounted) return;
+    if (silent && next.hasError) return; // keep showing the last good data
+    state = next;
   }
 
   Future<void> create(BudgetCreate data) async {
@@ -169,31 +187,27 @@ class BudgetsController extends StateNotifier<AsyncValue<List<BudgetEntry>>> {
   }
 
   Future<void> update(int id, BudgetUpdate data) async {
-  await _repo.update(id, data);
-  await refresh();
+    await _repo.update(id, data);
+    await refresh();
+  }
 }
-}
 
-final budgetsProvider =
-    StateNotifierProvider<BudgetsController, AsyncValue<List<BudgetEntry>>>((
-      ref,
-    ) {
-      final controller = BudgetsController(
-        ref.watch(budgetsRepositoryProvider),
-        ref,
-      );
+final budgetsProvider = StateNotifierProvider.autoDispose<BudgetsController,
+    AsyncValue<List<BudgetEntry>>>((ref) {
+  ref.watch(sessionUserIdProvider);
+  final controller = BudgetsController(
+    ref.watch(budgetsRepositoryProvider),
+    ref,
+  );
 
-      ref.listen<AsyncValue<List<Category>>>(categoriesProvider, (prev, next) {
-        if (next.hasValue) controller.refresh();
-      });
+  ref.listen<AsyncValue<List<Category>>>(categoriesProvider, (prev, next) {
+    if (next.hasValue) controller.refresh();
+  });
 
-      return controller;
-    });
+  return controller;
+});
 
-final debtsRepositoryProvider = Provider(
-  (ref) => DebtsRepository(ref.watch(apiClientProvider)),
-);
-
+/// Debts: same silent-refresh pattern. Mutations refresh the list in place.
 class DebtsController extends StateNotifier<AsyncValue<List<Debt>>> {
   final DebtsRepository _repo;
   DebtsController(this._repo) : super(const AsyncValue.loading()) {
@@ -201,7 +215,7 @@ class DebtsController extends StateNotifier<AsyncValue<List<Debt>>> {
   }
 
   Future<void> refresh({bool silent = false}) async {
-    if (!silent) state = const AsyncValue.loading();
+    if (!silent && mounted) state = const AsyncValue.loading();
     final next = await AsyncValue.guard(() => _repo.list());
     if (!mounted) return;
     if (silent && next.hasError) return;
@@ -224,7 +238,8 @@ class DebtsController extends StateNotifier<AsyncValue<List<Debt>>> {
   }
 }
 
-final debtsProvider =
-    StateNotifierProvider<DebtsController, AsyncValue<List<Debt>>>(
-      (ref) => DebtsController(ref.watch(debtsRepositoryProvider)),
-    );
+final debtsProvider = StateNotifierProvider.autoDispose<DebtsController,
+    AsyncValue<List<Debt>>>((ref) {
+  ref.watch(sessionUserIdProvider);
+  return DebtsController(ref.watch(debtsRepositoryProvider));
+});
