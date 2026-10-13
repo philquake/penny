@@ -15,7 +15,6 @@ def create_transaction(
     category_id: int,
     type: TransactionType,
     description: str | None = None,
-    debt_id: int | None = None,
 ) -> Transaction:
     transaction = Transaction(
         user_id=user_id,
@@ -24,9 +23,7 @@ def create_transaction(
         category_id=category_id,
         type=type,
         description=description,
-        debt_id=debt_id,
     )
-
 
     db.add(transaction)
     db.commit()
@@ -34,18 +31,18 @@ def create_transaction(
 
     return transaction
 
+
 def get_transaction(
     db: Session,
     transaction_id: int,
     user_id: int,
 ) -> Transaction | None:
-    
     statement = select(Transaction).where(
         Transaction.id == transaction_id,
         Transaction.user_id == user_id,
     )
-    #scalar so it returns None instaed of execute If nothing matches, result itself is not None. It's a Result object containing zero rows.
     return db.scalar(statement)
+
 
 def list_transactions(
     db: Session,
@@ -54,31 +51,21 @@ def list_transactions(
     end_date: date | None = None,
     category_id: int | None = None,
 ) -> list[Transaction]:
-
-    statement = select(Transaction).where(
-        Transaction.user_id == user_id
-    )
+    statement = select(Transaction).where(Transaction.user_id == user_id)
 
     if start_date is not None:
-        statement = statement.where(
-            Transaction.transaction_date >= start_date
-        )
+        statement = statement.where(Transaction.transaction_date >= start_date)
 
     if end_date is not None:
-        statement = statement.where(
-            Transaction.transaction_date <= end_date
-        )
+        statement = statement.where(Transaction.transaction_date <= end_date)
 
     if category_id is not None:
-        statement = statement.where(
-            Transaction.category_id == category_id
-        )
+        statement = statement.where(Transaction.category_id == category_id)
 
-    statement = statement.order_by(
-        Transaction.transaction_date.desc()
-    )
+    statement = statement.order_by(Transaction.transaction_date.desc())
 
     return list(db.scalars(statement).all())
+
 
 def update_transaction(
     db: Session,
@@ -89,7 +76,6 @@ def update_transaction(
     description: str | None = None,
     type: TransactionType | None = None,
 ) -> Transaction:
-    
     if type is not None:
         transaction.type = type
 
@@ -110,10 +96,7 @@ def update_transaction(
 
     return transaction
 
-def delete_transaction(
-    db: Session,
-    transaction: Transaction,
-) -> None:
+
+def delete_transaction(db: Session, transaction: Transaction) -> None:
     db.delete(transaction)
     db.commit()
-    
