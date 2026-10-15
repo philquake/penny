@@ -18,6 +18,6 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.now(tz=None),
+        default=lambda: datetime.now(tz=None),
     )
     role: Mapped[str] = mapped_column(String(255), default="user")
