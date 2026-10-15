@@ -4,8 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
+from app.core.validators import ensure_usable_category
 from app.crud import debts as debts_crud
-from app.crud.categories import get_category, is_debt_payment_category
+from app.crud.categories import is_debt_payment_category
 from app.crud.transactions import (
     create_transaction,
     delete_transaction,
@@ -32,7 +33,7 @@ def _resolve_debt_id(db: Session, user: User, category_id: int,
                      tx_type: TransactionType, debt_id: int | None) -> int | None:
     """Only expense transactions in the Debt Payment category link to a debt.
     Anything else clears the link, which is how switching category unlinks it."""
-    category = get_category(db, category_id=category_id, user_id=user.id)
+    category = ensure_usable_category(db, category_id=category_id, user_id=user.id,  expected_type=tx_type)
     if category is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Category not found")
 
@@ -46,7 +47,7 @@ def _resolve_debt_id(db: Session, user: User, category_id: int,
     if debt is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Debt not found")
 
-    debts_crud.accrue_interest(db, debt)  # settle interest before the payment lands
+    debts_crud.accrue_interest(db, debt) 
     return debt.id
 
 
@@ -122,6 +123,9 @@ def update_existing_transaction(
         raise HTTPException(status_code=404, detail="Transaction not found")
 
     fields = transaction_data.model_dump(exclude_unset=True)
+    for required in ("category_id", "amount", "type", "transaction_date"):
+        if required in fields and fields[required] is None:
+            raise HTTPException(422, f"{required} cannot be null")
     requested_debt = fields.pop("debt_id", transaction.debt_id)
 
     # Validate against the values the transaction will have *after* the update.
