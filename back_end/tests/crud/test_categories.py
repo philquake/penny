@@ -1,44 +1,58 @@
+import pytest
+from sqlalchemy.exc import IntegrityError
+from app.crud.categories import create_category
+from app.models.transactions import TransactionType
 from app.crud.categories import (
     DEFAULT_CATEGORIES,
+    DEFAULT_INCOME_CATEGORIES,
+    DEFAULT_SAVINGS_CATEGORIES,
     create_category,
     delete_category,
+    get_categories,
     get_category,
-    list_categories,
     seed_default_categories,
 )
 from app.models.transactions import TransactionType
 
+from sqlalchemy import text
+
+
+ALL_DEFAULTS = (
+    DEFAULT_CATEGORIES
+    + DEFAULT_INCOME_CATEGORIES
+    + DEFAULT_SAVINGS_CATEGORIES
+)
 
 def test_create_category(db):
     result = create_category(
         db,
         name="Grocercies",
-        user_id=12,
+        user_id=1,
         type=TransactionType.EXPENSE,
     )
 
     assert result.id is not None
     assert result.name == "Grocercies"
-    assert result.user_id == 12
+    assert result.user_id == 1
     assert result.type == TransactionType.EXPENSE
 
 def test_get_category_of_current_user(db):
         category = create_category(
                 db,
                 name="Groceries",
-                user_id=12,
+                user_id=1,
                 type=TransactionType.EXPENSE,
             )
         
         result = get_category(
             db,
             category_id = category.id,
-            user_id = 12,
+            user_id = 1,
         )
         
         assert result is not None
         assert result.id == category.id
-        assert result.user_id == 12
+        assert result.user_id == 1
         assert result.name == "Groceries"
         assert result.type == TransactionType.EXPENSE
         
@@ -46,7 +60,7 @@ def test_get_category_of_another_user(db):
     category = create_category(
             db,
             name="Private",
-            user_id=12,
+            user_id=1,
             type=TransactionType.EXPENSE,
         )
     
@@ -81,7 +95,7 @@ def test_list_categories(db):
         type=TransactionType.EXPENSE,
     )
 
-    result = list_categories(
+    result = get_categories(
         db,
         user_id=1,
     )
@@ -96,14 +110,14 @@ def test_get_category_that_does_not_exist(db):
     category = create_category(
             db,
             name="test",
-            user_id=12,
+            user_id=1,
             type=TransactionType.EXPENSE,
         )
     
     result = get_category(
         db,
         category_id = "test",
-        user_id = 12,
+        user_id = 1,
     )
     
     assert result is None
@@ -120,7 +134,7 @@ def test_get_global_category(db):
     result = get_category(
         db,
         category_id = category.id,
-        user_id = 12,
+        user_id = 1,
     )
     
     assert result is not None
@@ -137,7 +151,7 @@ def test_get_nonexistent_category(db):
 def test_seed_default_categories(db):
     seed_default_categories(db)
 
-    result = list_categories(
+    result = get_categories(
         db,
         user_id=1,
     )
@@ -151,7 +165,7 @@ def test_seed_default_categories_is_idempotent(db):
     seed_default_categories(db)
     seed_default_categories(db)
 
-    result = list_categories(
+    result = get_categories(
         db,
         user_id=1,
     )
@@ -159,12 +173,11 @@ def test_seed_default_categories_is_idempotent(db):
     default_categories = [
         category
         for category in result
-        if category.user_id is None
-        and category.name in DEFAULT_CATEGORIES
+        if category.user_id is None and category.name in ALL_DEFAULTS
     ]
 
-    assert len(default_categories) == len(DEFAULT_CATEGORIES)
-
+    assert len(default_categories) == len(ALL_DEFAULTS)
+    
 def test_delete_category(db):
     category = create_category(
         db,
@@ -185,3 +198,11 @@ def test_delete_category(db):
     )
 
     assert result is None
+    
+def test_foreign_keys_are_enforced(db):
+    assert db.execute(text("PRAGMA foreign_keys")).scalar() == 1
+    
+def test_orphan_user_id_is_rejected(db):
+    with pytest.raises(IntegrityError):
+        create_category(db, name="X", user_id=999, type=TransactionType.EXPENSE)
+    db.rollback()
