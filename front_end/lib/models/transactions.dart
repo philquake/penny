@@ -58,6 +58,7 @@ class TransactionUpdate {
       if (description != null) 'description': description,
       if (transactionDate != null)
         'transaction_date': _dateOnly(transactionDate!),
+      if (debtId != null) 'debt_id': debtId
     };
   }
 
@@ -105,6 +106,7 @@ class Transaction {
       createdAt: DateTime.parse(
         json['created_at'] as String,
       ),
+      debtId: json['debt_id'] as int?,
     );
   }
 
@@ -118,6 +120,7 @@ class Transaction {
       'description': description,
       'transaction_date': _dateOnly(transactionDate),
       'created_at': createdAt.toIso8601String(),
+      'debt_id': debtId,
     };
   }
 
