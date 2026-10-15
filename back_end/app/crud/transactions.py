@@ -15,6 +15,7 @@ def create_transaction(
     category_id: int,
     type: TransactionType,
     description: str | None = None,
+    debt_id: int | None = None,
 ) -> Transaction:
     transaction = Transaction(
         user_id=user_id,
@@ -23,6 +24,7 @@ def create_transaction(
         category_id=category_id,
         type=type,
         description=description,
+        debt_id=debt_id,
     )
 
     db.add(transaction)
