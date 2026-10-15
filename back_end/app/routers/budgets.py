@@ -36,12 +36,14 @@ def create_new_budget(
         user_id=current_user.id,
         expected_type=TransactionType.EXPENSE,
     )
-
-    return create_budget(
-        db=db,
-        user_id=current_user.id,
-        **budget_data.model_dump(),
-    )
+    try:
+        return create_budget(
+            db=db,
+            user_id=current_user.id,
+            **budget_data.model_dump(),
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc))
 
 
 @router.get("", response_model=list[BudgetOut])
@@ -117,5 +119,7 @@ def update_existing_budget(
     period = fields.get("period", budget.period)
     if period == BudgetPeriod.CUSTOM and end < start:
         raise HTTPException(422, "period_end must be on or after period_start")
-
-    return update_budget(db, budget, **fields)
+    try:
+        return update_budget(db, budget, **fields)
+    except ValueError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc))

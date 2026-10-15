@@ -83,7 +83,7 @@ class BudgetCreate(BaseModel):
     amount: Decimal = Field(gt=0)
     period: BudgetPeriod
     period_start: date
-    period_end: date
+    period_end: date | None = None
     alert_threshold_percent: int = Field(
         ge=0,
         le=100,
