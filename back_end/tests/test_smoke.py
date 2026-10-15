@@ -183,6 +183,7 @@ def test_smoke_workflow():
             "transaction_date": "2026-08-29",
             "category_id": food_category["id"],
             "description": "Invalid transaction",
+            "type": "expense",
         }
 
         response = client.post(
