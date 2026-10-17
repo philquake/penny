@@ -8,7 +8,7 @@ import '../models/transactions.dart';
 
 /// Wallet: net worth, debt and savings as cards.
 /// Debt card opens the full Debts screen; Savings card sets a goal, which
-/// shows as a progress bar beneath the card.
+/// shows as a progress bar inside the card.
 class WalletScreen extends StatelessWidget {
   final List<Debt> debts;
   final List<Transaction> transactions;
@@ -76,7 +76,7 @@ class WalletScreen extends StatelessWidget {
                     label: 'Net worth',
                     amount: _netWorth.toStringAsFixed(2),
                     colorBySign: true,
-                    subtitle: 'Cash + savings − debt',
+                    subtitle: '',
                   ),
                   const SizedBox(height: 14),
                   _WalletCard(
@@ -99,9 +99,10 @@ class WalletScreen extends StatelessWidget {
                         ? 'Tap to set a goal'
                         : 'Goal \$${goal.toStringAsFixed(0)}',
                     onTap: () => _editGoal(context),
+                    footer: (goal != null && goal > 0)
+                        ? _GoalProgress(saved: _savings, goal: goal)
+                        : null,
                   ),
-                  if (goal != null && goal > 0)
-                    _GoalProgress(saved: _savings, goal: goal),
                 ],
               ),
             ),
@@ -120,6 +121,7 @@ class _WalletCard extends StatelessWidget {
   final Color? subtitleColor;
   final bool colorBySign;
   final VoidCallback? onTap;
+  final Widget? footer;
 
   const _WalletCard({
     required this.icon,
@@ -129,6 +131,7 @@ class _WalletCard extends StatelessWidget {
     this.subtitleColor,
     this.colorBySign = false,
     this.onTap,
+    this.footer,
   });
 
   @override
@@ -144,46 +147,55 @@ class _WalletCard extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(18),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: context.colors.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                alignment: Alignment.center,
-                child: Icon(icon, size: 19, color: context.colors.primary),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label, style: context.text.labelMedium),
-                    const SizedBox(height: 4),
-                    AmountText(
-                      amount,
-                      size: 26,
-                      colorBySign: colorBySign,
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: context.colors.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: context.text.bodySmall?.copyWith(
-                        color: subtitleColor,
-                      ),
+                    alignment: Alignment.center,
+                    child: Icon(icon, size: 19, color: context.colors.primary),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(label, style: context.text.labelMedium),
+                        const SizedBox(height: 4),
+                        AmountText(
+                          amount,
+                          size: 26,
+                          colorBySign: colorBySign,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: context.text.bodySmall?.copyWith(
+                            color: subtitleColor,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  if (onTap != null)
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 20,
+                      color: context.colors.outline,
+                    ),
+                ],
               ),
-              if (onTap != null)
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: context.colors.outline,
-                ),
+              if (footer != null) ...[
+                const SizedBox(height: 16),
+                footer!,
+              ],
             ],
           ),
         ),
@@ -191,7 +203,6 @@ class _WalletCard extends StatelessWidget {
     );
   }
 }
-
 class _GoalProgress extends StatelessWidget {
   final double saved;
   final double goal;
@@ -202,9 +213,7 @@ class _GoalProgress extends StatelessWidget {
     final fraction = (saved / goal).clamp(0.0, 1.0);
     final reached = saved >= goal;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 10, 4, 0),
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
@@ -233,8 +242,7 @@ class _GoalProgress extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
+      );
   }
 }
 
