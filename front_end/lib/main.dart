@@ -10,6 +10,7 @@ import 'models/budget_period.dart';
 import 'models/debt.dart';
 import 'providers/data_providers.dart';
 import 'providers/session.dart';
+import 'providers/savings_goal_provider.dart';
 import 'screens/add_edit_transaction_screen.dart';
 import 'screens/budgets_screen.dart';
 import 'screens/categories_screen.dart';
@@ -17,6 +18,7 @@ import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/reports_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/wallet_screen.dart';
 import 'services/budget_notification_service.dart';
 
 import 'core/theme/app_theme.dart';
@@ -106,7 +108,7 @@ class _AppShellState extends State<_AppShell> {
     final tabs = [
       _HomeTab(onViewBudgets: () => setState(() => _index = 1)),
       const _BudgetsTab(),
-      const _DebtsTab(),
+      const _WalletTab(),
       const _ReportsTab(),
       const _SettingsTab(),
     ];
@@ -129,7 +131,7 @@ class _AppShellState extends State<_AppShell> {
           ),
           NavigationDestination(
             icon: Icon(Icons.credit_card_rounded),
-            label: 'Debts',
+            label: 'Wallet',
           ),
           NavigationDestination(
             icon: Icon(Icons.pie_chart_rounded),
@@ -348,8 +350,39 @@ class _SettingsTab extends ConsumerWidget {
   }
 }
 
-class _DebtsTab extends ConsumerWidget {
-  const _DebtsTab();
+class _WalletTab extends ConsumerWidget {
+  const _WalletTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final goal = ref.watch(savingsGoalProvider).valueOrNull;
+    final debtsState = ref.watch(debtsProvider);
+    final transactionsState = ref.watch(transactionsProvider);
+
+    return _asyncBody(
+      context,
+      debtsState,
+      data: (debts) => _asyncBody(
+        context,
+        transactionsState,
+        data: (transactions) => WalletScreen(
+          debts: debts,
+          transactions: transactions,
+          savingsGoal: goal,
+          onSetGoal: (g) => ref.read(savingsGoalProvider.notifier).setGoal(g),
+          onOpenDebts: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const _DebtsRoute()),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The existing Debts screen, pushed from the Wallet's Debt card. Watches the
+/// provider itself so it stays live after adding or deleting a debt.
+class _DebtsRoute extends ConsumerWidget {
+  const _DebtsRoute();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
