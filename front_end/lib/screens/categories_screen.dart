@@ -380,7 +380,7 @@ class _AddCategorySheetState extends State<_AddCategorySheet> {
   final _nameController = TextEditingController();
   TransactionType _type = TransactionType.expense;
   String _icon = 'bag';
-  String? _color;
+  String _color = categorySwatches.first;
 
   static const _iconChoices = [
     'bag',

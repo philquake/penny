@@ -6,6 +6,7 @@ import '../models/transaction_type.dart';
 import '../models/transactions.dart';
 import '../core/theme/theme_x.dart';
 import '../widgets/transaction_row.dart' show categoryIcon;
+import '../core/theme/chart_colors.dart';
 
 /// Add/Edit Transaction screen.
 ///
@@ -144,14 +145,14 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                 leading: Icon(
                   categoryIcon(category.icon),
                   size: 18,
-                  color: context.colors.onPrimaryContainer,
+                  color: categoryColor(_category!.id, hex: _category!.color),
                 ),
                 title: Text(category.name, style: context.text.bodyMedium),
                 trailing: _category?.id == category.id
                     ? Icon(
                         Icons.check_rounded,
                         size: 16,
-                        color: context.colors.primary,
+                        color: categoryColor(_category!.id, hex: _category!.color),
                       )
                     : null,
                 onTap: () => Navigator.of(context).pop(category),

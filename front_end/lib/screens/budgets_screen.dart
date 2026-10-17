@@ -7,6 +7,7 @@ import '../models/category.dart';
 import '../core/theme/app_colors.dart';
 import '../widgets/transaction_row.dart' show categoryIcon;
 import '../core/theme/theme_x.dart';
+import '../core/theme/chart_colors.dart';
 
 /// Budgets screen — one ledger card per budget: category, period, a
 /// progress bar colored by the backend's computed status, spent/remaining.
@@ -240,7 +241,7 @@ class _BudgetCard extends StatelessWidget {
       case 'alert':
         return finance.expense.withValues(alpha: 0.6);
       default:
-        return colors.primary;
+              return categoryColor(entry.category.id, hex: entry.category.color);
     }
   }
 
@@ -265,6 +266,7 @@ class _BudgetCard extends StatelessWidget {
     final limit = double.tryParse(entry.budget.amount) ?? 1;
     final fraction = limit > 0 ? (spent / limit).clamp(0.0, 1.2) : 0.0;
     final remaining = double.tryParse(entry.status.remainingAmount) ?? 0;
+    final catColor = categoryColor(entry.category.id, hex: entry.category.color);
 
     return Material(
       color: context.colors.surface,
@@ -286,14 +288,14 @@ class _BudgetCard extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: context.colors.surfaceContainerHigh,
+                      color: catColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
                       categoryIcon(entry.category.icon),
                       size: 15,
-                      color: context.colors.primary,
+                      color: catColor,
                     ),
                   ),
                   const SizedBox(width: 10),

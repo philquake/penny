@@ -7,6 +7,7 @@ import '../models/transactions.dart';
 import '../core/widgets/amount_text.dart';
 import '../widgets/transaction_row.dart';
 import '../core/theme/theme_x.dart';
+import '../core/theme/chart_colors.dart';
 
 /// Dashboard / Home screen — the first thing a user sees after signing in.
 /// Ledger-style: a running balance up top, this month's flow beneath it,
@@ -26,6 +27,7 @@ class DashboardScreen extends StatefulWidget {
   final VoidCallback onViewBudgets;
   final VoidCallback? onViewTransactions;
   final void Function(Transaction)? onTransactionTap;
+  
 
   const DashboardScreen({
     super.key,
@@ -893,7 +895,8 @@ class _BudgetRow extends StatelessWidget {
     final limit = double.tryParse(entry.budget.amount) ?? 1;
     final fraction = limit > 0 ? (spent / limit).clamp(0, 1.4) : 0.0;
     final isOver = entry.status.status == 'exceeded';
-    final barColor = isOver ? context.colors.error : context.colors.primary;
+    final catColor = categoryColor(entry.category.id, hex: entry.category.color);
+    final barColor = isOver ? context.colors.error : catColor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

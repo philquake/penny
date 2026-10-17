@@ -5,6 +5,7 @@ import '../models/transactions.dart';
 import '../models/transaction_type.dart';
 import '../core/widgets/amount_text.dart';
 import '../core/theme/theme_x.dart';
+import '../core/theme/chart_colors.dart';
 
 const _monthAbbr = [
   'Jan',
@@ -78,6 +79,8 @@ class TransactionRow extends StatelessWidget {
         ? transaction.description!
         : category.name;
 
+    final catColor = categoryColor(category.id, hex: category.color);
+
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -95,7 +98,7 @@ class TransactionRow extends StatelessWidget {
               child: Icon(
                 categoryIcon(category.icon),
                 size: 16,
-                color: context.colors.primary,
+                color: catColor,
               ),
             ),
             const SizedBox(width: 12),

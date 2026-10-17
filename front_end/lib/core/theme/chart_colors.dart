@@ -5,7 +5,7 @@ const categorySwatches = <String>[
   '#2E9E7A',
   '#7A6A9C',
   '#101935',
-  '#F2FDFF',
+  '#5B6C8F',
   '#020887',
   '#ED474A',
   '#9AD4D6',
