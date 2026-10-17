@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../models/category.dart';
 import '../models/debt.dart';
 import '../models/transaction_type.dart';
 import '../models/transactions.dart';
-import '../services/receipt_parser.dart';
 import '../core/theme/theme_x.dart';
 import '../widgets/transaction_row.dart' show categoryIcon;
 
@@ -55,8 +52,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
   Category? _category;
   Debt? _debt;
   bool _isSaving = false;
-  bool _isScanning = false;
-  final ImagePicker _picker = ImagePicker();
+
 
   bool _autoSelectsDefault(TransactionType type) =>
       type == TransactionType.income || type == TransactionType.savings;
@@ -127,112 +123,6 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
     });
   }
 
-  Future<void> _scanReceipt() async {
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Scan receipt', style: context.text.titleMedium),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_camera_rounded),
-              title: const Text('Use camera'),
-              onTap: () => Navigator.of(context).pop(ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_rounded),
-              title: const Text('Choose photo'),
-              onTap: () => Navigator.of(context).pop(ImageSource.gallery),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (source == null) return;
-
-    final picked = await _picker.pickImage(source: source);
-    if (picked == null) return;
-
-    setState(() => _isScanning = true);
-    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
-
-    try {
-      final image = InputImage.fromFilePath(picked.path);
-      final text = await recognizer.processImage(image);
-      final parsed = ReceiptTextParser.parse(text.text);
-
-      if (!mounted) return;
-
-      if (parsed.amount != null) {
-        _amountController.text = parsed.amount!;
-        _amountController.selection = TextSelection.collapsed(
-          offset: _amountController.text.length,
-        );
-      }
-
-      if (parsed.merchant != null &&
-          _descriptionController.text.trim().isEmpty) {
-        _descriptionController.text = parsed.merchant!;
-      }
-
-      if (parsed.date != null) {
-        setState(() => _date = parsed.date!);
-      }
-
-      if (parsed.amount != null ||
-          parsed.merchant != null ||
-          parsed.date != null) {
-        await showDialog<void>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Receipt parsed'),
-            content: Text(
-              [
-                if (parsed.merchant != null) 'Merchant: ${parsed.merchant}',
-                if (parsed.amount != null) 'Amount: \$${parsed.amount}',
-                if (parsed.date != null)
-                  'Date: ${parsed.date!.month}/${parsed.date!.day}/${parsed.date!.year}',
-              ].join('\n'),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (error) {
-      if (!mounted) return;
-      await showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Couldn\'t scan receipt'),
-          content: Text(error.toString()),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isScanning = false);
-      }
-      recognizer.close();
-    }
-  }
 
   Future<void> _pickCategory() async {
     final options = _categoriesForType;
@@ -509,7 +399,7 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                         )
                       : Text(
                           widget.debts.isEmpty
-                              ? 'No debts yet. Add one in the Debts tab.'
+                              ? 'No debts yet. Add one from Wallet..'
                               : 'Select debt',
                           style: context.text.bodyMedium?.copyWith(
                             color: context.colors.outline,
@@ -524,19 +414,6 @@ class _AddEditTransactionScreenState extends State<AddEditTransactionScreen> {
                 child: Text(
                   '${_monthAbbr[_date.month - 1]} ${_date.day}, ${_date.year}',
                   style: context.text.bodyMedium,
-                ),
-              ),
-              const Divider(),
-              _FieldRow(
-                label: 'Receipt',
-                onTap: _scanReceipt,
-                child: Text(
-                  _isScanning ? 'Scanning…' : 'Scan receipt',
-                  style: context.text.bodyMedium?.copyWith(
-                    color: _isScanning
-                        ? context.colors.onSurfaceVariant
-                        : context.colors.primary,
-                  ),
                 ),
               ),
               const Divider(),
